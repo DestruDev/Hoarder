@@ -4,7 +4,7 @@ Personal media collection tracker. Books, movies, TV, anime, manga, manhwa, game
 
 ## Stack
 
-- Expo SDK 54 + TypeScript (matches App Store Expo Go)
+- React Native + Expo SDK 54 + TypeScript (matches App Store Expo Go)
 - [Expo Router](https://docs.expo.dev/router/introduction/) (file-based navigation)
 - [expo-sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) + [Drizzle ORM](https://orm.drizzle.team/docs/connect-expo-sqlite)
 
