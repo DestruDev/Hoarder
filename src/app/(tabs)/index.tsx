@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { getItems, type Item } from '@/lib/db';
 
-export default function ListScreen() {
+export default function HomeScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState<string | null>(null);
 

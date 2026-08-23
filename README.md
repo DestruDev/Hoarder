@@ -31,7 +31,8 @@ Migrations live in `src/drizzle/` and run automatically on app start.
 ## Layout
 
 ```
-src/app/          screens (list, detail, add/edit)
+src/app/(tabs)/   Home, Library, Explore, Profile, Settings
+src/app/          item detail and add/edit (stack over tabs)
 src/lib/db/       SQLite client, schema, and CRUD
 src/drizzle/      generated SQL migrations
 ```
