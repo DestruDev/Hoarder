@@ -16,8 +16,6 @@ npm start
 
 Then open in Android emulator, iOS simulator, or Expo Go.
 
-On first launch the app inserts a dummy item and logs it to the Metro console so you can confirm the database layer works. Remove the `seedDummyItemIfEmpty()` call in `src/app/_layout.tsx` when you no longer need that check.
-
 ## Schema changes
 
 After editing `src/lib/db/schema.ts`:

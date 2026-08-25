@@ -40,3 +40,9 @@ export type ItemFilters = {
   mediaType?: MediaType;
   status?: ItemStatus;
 };
+
+export type Profile = {
+  name: string | null;
+  description: string | null;
+  avatarUrl: string | null;
+};

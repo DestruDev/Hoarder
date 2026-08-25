@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 
 import migrations from '@/drizzle/migrations';
-import { db, seedDummyItemIfEmpty } from '@/lib/db';
+import { db } from '@/lib/db';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,13 +22,7 @@ export default function RootLayout() {
       return;
     }
 
-    seedDummyItemIfEmpty()
-      .catch((seedError) => {
-        console.error('[Hoarder DB] Seed failed:', seedError);
-      })
-      .finally(() => {
-        SplashScreen.hideAsync();
-      });
+    SplashScreen.hideAsync();
   }, [success, error]);
 
   if (error) {

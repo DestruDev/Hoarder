@@ -12,3 +12,10 @@ export const items = sqliteTable('items', {
   coverImageUrl: text('cover_image_url'),
   dateAdded: text('date_added').notNull(),
 });
+
+export const profile = sqliteTable('profile', {
+  id: integer('id').primaryKey(),
+  name: text('name'),
+  description: text('description'),
+  avatarUrl: text('avatar_url'),
+});
