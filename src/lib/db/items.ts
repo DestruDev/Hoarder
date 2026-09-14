@@ -2,7 +2,7 @@ import { and, desc, eq, type SQL } from 'drizzle-orm';
 
 import { db } from './client';
 import { items } from './schema';
-import type { Item, ItemFilters, NewItemInput } from './types';
+import type { CatalogItem, Item, ItemFilters, MediaType, NewItemInput } from './types';
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
   const conditions: SQL[] = [];
@@ -29,6 +29,35 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
 export async function getItemById(id: number): Promise<Item | undefined> {
   const [item] = await db.select().from(items).where(eq(items.id, id)).limit(1);
   return item;
+}
+
+export async function findItemByTitleAndType(
+  title: string,
+  mediaType: MediaType,
+): Promise<Item | undefined> {
+  const [item] = await db
+    .select()
+    .from(items)
+    .where(and(eq(items.title, title), eq(items.mediaType, mediaType)))
+    .limit(1);
+
+  return item;
+}
+
+export async function addCatalogItemToLibrary(catalogItem: CatalogItem): Promise<Item> {
+  const existing = await findItemByTitleAndType(catalogItem.title, catalogItem.mediaType);
+  if (existing) {
+    return existing;
+  }
+
+  return createItem({
+    title: catalogItem.title,
+    mediaType: catalogItem.mediaType,
+    status: 'planning',
+    rating: null,
+    notes: null,
+    coverImageUrl: catalogItem.coverImageUrl,
+  });
 }
 
 export async function createItem(input: NewItemInput): Promise<Item> {

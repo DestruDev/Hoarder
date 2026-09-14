@@ -7,8 +7,10 @@ export {
 export { SAMPLE_CATALOG } from './catalog-data';
 export { getCatalogItemById, getCatalogItems } from './catalog-store';
 export {
+  addCatalogItemToLibrary,
   createItem,
   deleteItem,
+  findItemByTitleAndType,
   getItemById,
   getItems,
   updateItem,
