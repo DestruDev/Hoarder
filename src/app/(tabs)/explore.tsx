@@ -2,9 +2,9 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { MediaRow } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
 import { getCatalogItems, type CatalogItem, type MediaType } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
 
@@ -70,10 +70,11 @@ export default function ExploreScreen() {
                 href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
                 asChild>
                 <Pressable>
-                  <View>
-                    <Text>{item.title}</Text>
-                    <Text style={{ color: colors.textMuted }}>{item.mediaType}</Text>
-                  </View>
+                  <MediaRow
+                    title={item.title}
+                    subtitle={item.mediaType}
+                    coverImageUrl={item.coverImageUrl}
+                  />
                 </Pressable>
               </Link>
             ))}

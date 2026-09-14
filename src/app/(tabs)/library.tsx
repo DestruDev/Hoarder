@@ -3,6 +3,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { MediaRow } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
@@ -101,14 +102,12 @@ export default function LibraryScreen() {
                       key={item.id}
                       href={{ pathname: '/item/[id]', params: { id: String(item.id) } }}
                       asChild>
-                      <Pressable style={{ paddingHorizontal: 14, paddingVertical: 4 }}>
-                        <View>
-                          <Text>{item.title}</Text>
-                          <Text style={{ color: colors.textMuted }}>
-                            {item.mediaType}
-                            {item.rating != null ? ` · ${item.rating}` : ''}
-                          </Text>
-                        </View>
+                      <Pressable style={{ paddingHorizontal: 4, paddingVertical: 2 }}>
+                        <MediaRow
+                          title={item.title}
+                          subtitle={`${item.mediaType}${item.rating != null ? ` · ${item.rating}` : ''}`}
+                          coverImageUrl={item.coverImageUrl}
+                        />
                       </Pressable>
                     </Link>
                   ))

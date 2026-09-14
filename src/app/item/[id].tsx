@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Pressable } from 'react-native';
 
 import { LibraryStatusControl } from '@/components/library-status-control';
+import { MediaCover } from '@/components/media-cover';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { deleteItem, getItemById, type Item } from '@/lib/db';
 
@@ -78,11 +79,11 @@ export default function ItemDetailScreen() {
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
       <Stack.Screen options={{ title: item.title }} />
+      <MediaCover uri={item.coverImageUrl} width={140} height={200} />
       <Text>Title: {item.title}</Text>
       <Text>Type: {item.mediaType}</Text>
       <Text>Rating: {item.rating ?? '—'}</Text>
       <Text>Notes: {item.notes ?? '—'}</Text>
-      <Text>Cover URL: {item.coverImageUrl ?? '—'}</Text>
       <Text>Added: {item.dateAdded}</Text>
       <LibraryStatusControl media={item} libraryItem={item} onLibraryItemChange={setItem} />
 
