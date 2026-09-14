@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Screen, Text } from '@/components/themed';
+import { useMediaSearch } from '@/components/media-search';
+import { ScreenScrollView, Text } from '@/components/themed';
 import { resetAndSeed, resetAndSeedCatalog } from '@/lib/db';
+import { matchesSearchText } from '@/lib/media-search';
+
+type SettingItem = {
+  id: string;
+  group: string;
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+};
 
 export default function SettingsScreen() {
+  const { query } = useMediaSearch();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,22 +55,54 @@ export default function SettingsScreen() {
     }
   }
 
-  return (
-    <Screen style={{ padding: 16, gap: 12 }}>
-      <Text>Settings screen</Text>
+  const settings: SettingItem[] = __DEV__
+    ? [
+        {
+          id: 'reset-library',
+          group: 'Development',
+          title: 'Reset & seed sample library items',
+          onPress: handleResetAndSeed,
+          disabled: busy,
+        },
+        {
+          id: 'reset-catalog',
+          group: 'Development',
+          title: 'Reset & seed catalog',
+          onPress: handleResetCatalog,
+          disabled: busy,
+        },
+      ]
+    : [];
 
-      {__DEV__ ? (
-        <View style={{ gap: 8 }}>
-          <Text>Development</Text>
-          <Pressable onPress={handleResetAndSeed} disabled={busy}>
-            <Text>{busy ? 'Seeding…' : 'Reset & seed sample library items'}</Text>
-          </Pressable>
-          <Pressable onPress={handleResetCatalog} disabled={busy}>
-            <Text>{busy ? 'Seeding…' : 'Reset & seed catalog'}</Text>
-          </Pressable>
-          {message ? <Text>{message}</Text> : null}
-        </View>
-      ) : null}
-    </Screen>
+  const visibleSettings = settings.filter((setting) =>
+    matchesSearchText(`${setting.group} ${setting.title}`, query),
+  );
+
+  const groups = [...new Set(visibleSettings.map((setting) => setting.group))];
+
+  return (
+    <ScreenScrollView
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ padding: 16, gap: 12 }}>
+      {settings.length === 0 ? (
+        <Text>No settings yet.</Text>
+      ) : visibleSettings.length === 0 ? (
+        <Text>No matching settings.</Text>
+      ) : (
+        groups.map((group) => (
+          <View key={group} style={{ gap: 8 }}>
+            <Text>{group}</Text>
+            {visibleSettings
+              .filter((setting) => setting.group === group)
+              .map((setting) => (
+                <Pressable key={setting.id} onPress={setting.onPress} disabled={setting.disabled}>
+                  <Text>{busy ? 'Seeding…' : setting.title}</Text>
+                </Pressable>
+              ))}
+          </View>
+        ))
+      )}
+      {message ? <Text>{message}</Text> : null}
+    </ScreenScrollView>
   );
 }

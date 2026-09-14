@@ -6,6 +6,7 @@ export const colors = {
   textMuted: '#aaaaaa',
   border: '#333333',
   inputBackground: '#111111',
+  searchBarBackground: '#2a2a2a',
   placeholder: '#888888',
 };
 
