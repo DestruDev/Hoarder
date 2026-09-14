@@ -1,5 +1,12 @@
 export { DATABASE_NAME, db, sqlite } from './client';
 export {
+  resetAndSeedCatalog,
+  seedCatalog,
+  seedCatalogIfEmpty,
+} from './catalog-seed';
+export { SAMPLE_CATALOG } from './catalog-data';
+export { getCatalogItemById, getCatalogItems } from './catalog-store';
+export {
   createItem,
   deleteItem,
   getItemById,
@@ -7,6 +14,16 @@ export {
   updateItem,
 } from './items';
 export { getProfile, saveProfile } from './profile-store';
-export { items, profile } from './schema';
+export { resetAndSeed, SAMPLE_ITEMS, seedIfEmpty, seedItems } from './seed';
+export { catalog, items, profile } from './schema';
 export { ITEM_STATUSES, MEDIA_TYPES } from './types';
-export type { Item, ItemFilters, ItemStatus, MediaType, NewItemInput, Profile } from './types';
+export type {
+  CatalogItem,
+  Item,
+  ItemFilters,
+  ItemStatus,
+  MediaType,
+  NewCatalogItem,
+  NewItemInput,
+  Profile,
+} from './types';

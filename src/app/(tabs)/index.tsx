@@ -1,4 +1,6 @@
-import { ScrollView, Text, View } from 'react-native';
+import { View } from 'react-native';
+
+import { ScreenScrollView, Text } from '@/components/themed';
 
 const PLACEHOLDER_NOTIFICATIONS = [
   {
@@ -30,7 +32,7 @@ const PLACEHOLDER_NOTIFICATIONS = [
 
 export default function HomeScreen() {
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text>Updates</Text>
       {PLACEHOLDER_NOTIFICATIONS.map((notification) => (
         <View key={notification.id}>
@@ -38,6 +40,6 @@ export default function HomeScreen() {
           <Text>{notification.body}</Text>
         </View>
       ))}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

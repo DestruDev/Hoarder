@@ -46,3 +46,12 @@ export type Profile = {
   description: string | null;
   avatarUrl: string | null;
 };
+
+export type CatalogItem = {
+  id: number;
+  title: string;
+  mediaType: MediaType;
+  coverImageUrl: string | null;
+};
+
+export type NewCatalogItem = Omit<CatalogItem, 'id'>;

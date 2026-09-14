@@ -19,3 +19,10 @@ export const profile = sqliteTable('profile', {
   description: text('description'),
   avatarUrl: text('avatar_url'),
 });
+
+export const catalog = sqliteTable('catalog', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  mediaType: text('media_type').notNull().$type<MediaType>(),
+  coverImageUrl: text('cover_image_url'),
+});

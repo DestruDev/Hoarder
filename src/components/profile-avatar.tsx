@@ -17,12 +17,12 @@ export function ProfileAvatar({ uri, size = 32 }: ProfileAvatarProps) {
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#ddd',
+        backgroundColor: '#333',
       }}>
       {uri ? (
         <Image source={{ uri }} style={{ width: size, height: size }} />
       ) : (
-        <Ionicons name="person" size={size * 0.6} color="#666" />
+        <Ionicons name="person" size={size * 0.6} color="#fff" />
       )}
     </View>
   );

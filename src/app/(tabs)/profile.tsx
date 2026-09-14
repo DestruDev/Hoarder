@@ -1,8 +1,9 @@
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { getProfile, saveProfile, type Profile } from '@/lib/db';
 
 const PLACEHOLDER_NAME = 'Username';
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       {error ? <Text>{error}</Text> : null}
 
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
@@ -102,6 +103,6 @@ export default function ProfileScreen() {
           <Text>Save profile</Text>
         </Pressable>
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

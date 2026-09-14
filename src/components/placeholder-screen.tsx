@@ -1,9 +1,9 @@
-import { Text, View } from 'react-native';
+import { Screen, Text } from '@/components/themed';
 
 export function PlaceholderScreen({ name }: { name: string }) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+    <Screen style={{ justifyContent: 'center', alignItems: 'center', padding: 16 }}>
       <Text>{name} screen</Text>
-    </View>
+    </Screen>
   );
 }

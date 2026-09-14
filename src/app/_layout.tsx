@@ -1,11 +1,14 @@
+import { ThemeProvider } from '@react-navigation/native';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
 
+import { Screen, Text } from '@/components/themed';
+import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
-import { db } from '@/lib/db';
+import { db, seedCatalogIfEmpty } from '@/lib/db';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,32 +25,48 @@ export default function RootLayout() {
       return;
     }
 
-    SplashScreen.hideAsync();
+    seedCatalogIfEmpty()
+      .catch((seedError) => {
+        console.error('[Hoarder DB] Catalog seed failed:', seedError);
+      })
+      .finally(() => {
+        SplashScreen.hideAsync();
+      });
   }, [success, error]);
 
   if (error) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+      <Screen style={{ justifyContent: 'center', padding: 24 }}>
         <Text>Database migration failed.</Text>
         <Text>{error.message}</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (!success) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+      <Screen style={{ justifyContent: 'center', padding: 24 }}>
         <Text>Preparing database...</Text>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
-      <Stack.Screen name="form" options={{ title: 'Item' }} />
-      <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
-    </Stack>
+    <ThemeProvider value={navigationTheme}>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerTitleStyle: { color: colors.text },
+          contentStyle: { backgroundColor: colors.background },
+        }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
+        <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
+        <Stack.Screen name="form" options={{ title: 'Item' }} />
+        <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
+      </Stack>
+    </ThemeProvider>
   );
 }
