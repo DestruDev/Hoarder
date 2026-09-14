@@ -1,7 +1,8 @@
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable } from 'react-native';
 
+import { LibraryStatusControl } from '@/components/library-status-control';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { deleteItem, getItemById, type Item } from '@/lib/db';
 
@@ -14,23 +15,36 @@ export default function ItemDetailScreen() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!Number.isFinite(itemId)) {
-      setError('Invalid item id');
-      setLoaded(true);
-      return;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-    getItemById(itemId)
-      .then((row) => {
-        setItem(row);
+      if (!Number.isFinite(itemId)) {
+        setError('Invalid item id');
         setLoaded(true);
-      })
-      .catch((loadError: unknown) => {
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load item');
-        setLoaded(true);
-      });
-  }, [itemId]);
+        return;
+      }
+
+      getItemById(itemId)
+        .then((row) => {
+          if (!cancelled) {
+            setItem(row);
+            setError(null);
+            setLoaded(true);
+          }
+        })
+        .catch((loadError: unknown) => {
+          if (!cancelled) {
+            setError(loadError instanceof Error ? loadError.message : 'Failed to load item');
+            setLoaded(true);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [itemId]),
+  );
 
   async function handleDelete() {
     await deleteItem(itemId);
@@ -66,11 +80,11 @@ export default function ItemDetailScreen() {
       <Stack.Screen options={{ title: item.title }} />
       <Text>Title: {item.title}</Text>
       <Text>Type: {item.mediaType}</Text>
-      <Text>Status: {item.status}</Text>
       <Text>Rating: {item.rating ?? '—'}</Text>
       <Text>Notes: {item.notes ?? '—'}</Text>
       <Text>Cover URL: {item.coverImageUrl ?? '—'}</Text>
       <Text>Added: {item.dateAdded}</Text>
+      <LibraryStatusControl media={item} libraryItem={item} onLibraryItemChange={setItem} />
 
       <Link href={{ pathname: '/form', params: { id: String(item.id) } }} asChild>
         <Pressable>

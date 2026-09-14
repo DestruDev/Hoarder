@@ -2,7 +2,7 @@ import { and, desc, eq, type SQL } from 'drizzle-orm';
 
 import { db } from './client';
 import { items } from './schema';
-import type { CatalogItem, Item, ItemFilters, MediaType, NewItemInput } from './types';
+import type { CatalogItem, Item, ItemFilters, ItemStatus, MediaType, NewItemInput } from './types';
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
   const conditions: SQL[] = [];
@@ -44,16 +44,19 @@ export async function findItemByTitleAndType(
   return item;
 }
 
-export async function addCatalogItemToLibrary(catalogItem: CatalogItem): Promise<Item> {
+export async function addCatalogItemToLibrary(
+  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'>,
+  status: ItemStatus,
+): Promise<Item> {
   const existing = await findItemByTitleAndType(catalogItem.title, catalogItem.mediaType);
   if (existing) {
-    return existing;
+    return (await updateItem(existing.id, { status })) ?? existing;
   }
 
   return createItem({
     title: catalogItem.title,
     mediaType: catalogItem.mediaType,
-    status: 'planning',
+    status,
     rating: null,
     notes: null,
     coverImageUrl: catalogItem.coverImageUrl,

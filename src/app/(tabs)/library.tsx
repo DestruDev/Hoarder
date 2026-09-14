@@ -8,14 +8,7 @@ import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { getItems, ITEM_STATUSES, type Item, type ItemStatus } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-
-const STATUS_LABELS: Record<ItemStatus, string> = {
-  planning: 'Planning',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  dropped: 'Dropped',
-  on_hold: 'On Hold',
-};
+import { STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
   const { query } = useMediaSearch();

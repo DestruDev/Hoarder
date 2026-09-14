@@ -1,16 +1,9 @@
-import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable } from 'react-native';
 
+import { LibraryStatusControl } from '@/components/library-status-control';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
-import {
-  addCatalogItemToLibrary,
-  findItemByTitleAndType,
-  getCatalogItemById,
-  type CatalogItem,
-  type Item,
-} from '@/lib/db';
+import { findItemByTitleAndType, getCatalogItemById, type CatalogItem, type Item } from '@/lib/db';
 
 export default function CatalogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,9 +12,7 @@ export default function CatalogDetailScreen() {
   const [item, setItem] = useState<CatalogItem | undefined>();
   const [libraryItem, setLibraryItem] = useState<Item | undefined>();
   const [loaded, setLoaded] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,24 +59,6 @@ export default function CatalogDetailScreen() {
     }, [itemId]),
   );
 
-  async function handleAddToLibrary() {
-    if (!item || adding || libraryItem) {
-      return;
-    }
-
-    setAdding(true);
-    setActionError(null);
-
-    try {
-      const created = await addCatalogItemToLibrary(item);
-      setLibraryItem(created);
-    } catch (addError: unknown) {
-      setActionError(addError instanceof Error ? addError.message : 'Failed to add to library');
-    } finally {
-      setAdding(false);
-    }
-  }
-
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
@@ -116,43 +89,11 @@ export default function CatalogDetailScreen() {
       <Text>Title: {item.title}</Text>
       <Text>Type: {item.mediaType}</Text>
       <Text>Cover URL: {item.coverImageUrl ?? '—'}</Text>
-
-      {libraryItem ? (
-        <Link href={{ pathname: '/item/[id]', params: { id: String(libraryItem.id) } }} asChild>
-          <Pressable
-            style={{
-              marginTop: 8,
-              backgroundColor: colors.searchBarBackground,
-              borderColor: colors.border,
-              borderWidth: 1,
-              borderRadius: 10,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              alignItems: 'center',
-            }}>
-            <Text>In library</Text>
-          </Pressable>
-        </Link>
-      ) : (
-        <Pressable
-          onPress={handleAddToLibrary}
-          disabled={adding}
-          style={{
-            marginTop: 8,
-            backgroundColor: colors.searchBarBackground,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: 10,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            alignItems: 'center',
-            opacity: adding ? 0.6 : 1,
-          }}>
-          <Text>{adding ? 'Adding…' : 'Add to library'}</Text>
-        </Pressable>
-      )}
-
-      {actionError ? <Text>{actionError}</Text> : null}
+      <LibraryStatusControl
+        media={item}
+        libraryItem={libraryItem}
+        onLibraryItemChange={setLibraryItem}
+      />
     </ScreenScrollView>
   );
 }
