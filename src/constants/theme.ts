@@ -8,6 +8,7 @@ export const colors = {
   inputBackground: '#111111',
   searchBarBackground: '#2a2a2a',
   placeholder: '#888888',
+  danger: '#ff4d4d',
 };
 
 export const navigationTheme = {

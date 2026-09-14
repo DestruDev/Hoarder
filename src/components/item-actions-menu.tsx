@@ -1,0 +1,265 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Text, TextInput } from '@/components/themed';
+import { colors } from '@/constants/theme';
+import { deleteItem, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
+import { STATUS_LABELS } from '@/lib/status-labels';
+
+const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+export function ItemActionsMenu({
+  item,
+  onItemChange,
+  onRemoved,
+}: {
+  item: Item;
+  onItemChange: (item: Item) => void;
+  onRemoved: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [status, setStatus] = useState<ItemStatus>(item.status);
+  const [score, setScore] = useState<number | null>(item.rating);
+  const [notes, setNotes] = useState(item.notes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function openMenu() {
+    setMenuOpen(true);
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  function openEdit() {
+    setStatus(item.status);
+    setScore(item.rating);
+    setNotes(item.notes ?? '');
+    setError(null);
+    setMenuOpen(false);
+    setEditOpen(true);
+  }
+
+  function closeEdit() {
+    if (saving) {
+      return;
+    }
+
+    setEditOpen(false);
+  }
+
+  async function handleSave() {
+    if (saving) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const saved = await updateItem(item.id, {
+        status,
+        rating: score,
+        notes: notes.trim() || null,
+      });
+
+      if (!saved) {
+        throw new Error('Failed to save changes');
+      }
+
+      onItemChange(saved);
+      setEditOpen(false);
+    } catch (saveError: unknown) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (removing) {
+      return;
+    }
+
+    setRemoving(true);
+    setMenuOpen(false);
+
+    try {
+      await deleteItem(item.id);
+      onRemoved();
+    } catch {
+      setRemoving(false);
+    }
+  }
+
+  return (
+    <>
+      <Pressable onPress={openMenu} hitSlop={8} style={{ marginRight: 8 }}>
+        <Ionicons name="ellipsis-vertical" size={22} color={colors.text} />
+      </Pressable>
+
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu}>
+        <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={closeMenu}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              top: insets.top + 44,
+              right: 12,
+              minWidth: 168,
+              backgroundColor: colors.searchBarBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 10,
+              overflow: 'hidden',
+            }}>
+            <Pressable onPress={openEdit} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+              <Text>Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleRemove}
+              disabled={removing}
+              style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+              <Text style={{ color: colors.danger }}>{removing ? 'Removing…' : 'Remove'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={editOpen} transparent animationType="fade" onRequestClose={closeEdit}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Pressable
+            onPress={closeEdit}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            }}
+          />
+
+          <View
+            style={{
+              maxHeight: '88%',
+              backgroundColor: colors.inputBackground,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderBottomWidth: 0,
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: Math.max(insets.bottom, 16),
+            }}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 10 }}>
+              <Text style={{ fontSize: 18 }}>Edit</Text>
+
+              <Text style={{ color: colors.textMuted }}>Status</Text>
+              {ITEM_STATUSES.map((value) => {
+                const isSelected = status === value;
+
+                return (
+                  <Pressable
+                    key={value}
+                    onPress={() => setStatus(value)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
+                      borderColor: isSelected ? colors.text : colors.border,
+                      borderWidth: 1,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                    }}>
+                    <Text style={{ flex: 1 }}>{STATUS_LABELS[value]}</Text>
+                    {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
+                  </Pressable>
+                );
+              })}
+
+              <Text style={{ color: colors.textMuted, marginTop: 6 }}>Score</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {SCORES.map((value) => {
+                  const isSelected = score === value;
+
+                  return (
+                    <Pressable
+                      key={value}
+                      onPress={() => setScore(isSelected ? null : value)}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
+                        borderColor: isSelected ? colors.text : colors.border,
+                        borderWidth: 1,
+                        borderRadius: 10,
+                      }}>
+                      <Text>{value}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={{ color: colors.textMuted, marginTop: 6 }}>Notes</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Add notes"
+                multiline
+                style={{ minHeight: 96, textAlignVertical: 'top' }}
+              />
+
+              {error ? <Text>{error}</Text> : null}
+
+              <Pressable
+                onPress={handleSave}
+                disabled={saving}
+                style={{
+                  marginTop: 6,
+                  backgroundColor: colors.searchBarBackground,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  alignItems: 'center',
+                  opacity: saving ? 0.5 : 1,
+                }}>
+                <Text>{saving ? 'Saving…' : 'Save'}</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
+  );
+}

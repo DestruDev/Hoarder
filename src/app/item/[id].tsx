@@ -1,11 +1,11 @@
-import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable } from 'react-native';
 
+import { ItemActionsMenu } from '@/components/item-actions-menu';
 import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { deleteItem, getItemById, type Item } from '@/lib/db';
+import { getItemById, type Item } from '@/lib/db';
 
 export default function ItemDetailScreen() {
   const router = useRouter();
@@ -47,11 +47,6 @@ export default function ItemDetailScreen() {
     }, [itemId]),
   );
 
-  async function handleDelete() {
-    await deleteItem(itemId);
-    router.back();
-  }
-
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
@@ -78,7 +73,14 @@ export default function ItemDetailScreen() {
 
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
-      <Stack.Screen options={{ title: item.title }} />
+      <Stack.Screen
+        options={{
+          title: item.title,
+          headerRight: () => (
+            <ItemActionsMenu item={item} onItemChange={setItem} onRemoved={() => router.back()} />
+          ),
+        }}
+      />
       <MediaCover uri={item.coverImageUrl} width={140} height={200} />
       <Text>Title: {item.title}</Text>
       <Text>Type: {item.mediaType}</Text>
@@ -86,16 +88,6 @@ export default function ItemDetailScreen() {
       <Text>Notes: {item.notes ?? '—'}</Text>
       <Text>Added: {item.dateAdded}</Text>
       <LibraryStatusControl media={item} libraryItem={item} onLibraryItemChange={setItem} />
-
-      <Link href={{ pathname: '/form', params: { id: String(item.id) } }} asChild>
-        <Pressable>
-          <Text>Edit item</Text>
-        </Pressable>
-      </Link>
-
-      <Pressable onPress={handleDelete}>
-        <Text>Delete item</Text>
-      </Pressable>
     </ScreenScrollView>
   );
 }
