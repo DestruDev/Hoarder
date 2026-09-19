@@ -21,6 +21,16 @@ export const ITEM_STATUSES = [
 
 export type ItemStatus = (typeof ITEM_STATUSES)[number];
 
+export const RELEASE_STATUSES = ['upcoming', 'releasing', 'released'] as const;
+
+export type ReleaseStatus = (typeof RELEASE_STATUSES)[number];
+
+export const SHOW_MEDIA_TYPES = ['tv', 'anime'] as const;
+
+export function isShowMediaType(mediaType: MediaType): boolean {
+  return mediaType === 'tv' || mediaType === 'anime';
+}
+
 export type Item = {
   id: number;
   title: string;
@@ -29,6 +39,7 @@ export type Item = {
   rating: number | null;
   notes: string | null;
   coverImageUrl: string | null;
+  releaseStatus: ReleaseStatus | null;
   dateAdded: string;
 };
 
@@ -52,6 +63,9 @@ export type CatalogItem = {
   title: string;
   mediaType: MediaType;
   coverImageUrl: string | null;
+  releaseStatus: ReleaseStatus | null;
 };
 
-export type NewCatalogItem = Omit<CatalogItem, 'id'>;
+export type NewCatalogItem = Omit<CatalogItem, 'id' | 'releaseStatus'> & {
+  releaseStatus?: ReleaseStatus | null;
+};

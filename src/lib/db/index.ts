@@ -5,7 +5,7 @@ export {
   seedCatalogIfEmpty,
 } from './catalog-seed';
 export { SAMPLE_CATALOG } from './catalog-data';
-export { getCatalogItemById, getCatalogItems } from './catalog-store';
+export { findCatalogItemByTitleAndType, getCatalogItemById, getCatalogItems } from './catalog-store';
 export {
   addCatalogItemToLibrary,
   createItem,
@@ -18,7 +18,7 @@ export {
 export { getProfile, saveProfile } from './profile-store';
 export { resetAndSeed, SAMPLE_ITEMS, seedIfEmpty, seedItems } from './seed';
 export { catalog, items, profile } from './schema';
-export { ITEM_STATUSES, MEDIA_TYPES } from './types';
+export { ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isShowMediaType } from './types';
 export type {
   CatalogItem,
   Item,
@@ -28,4 +28,5 @@ export type {
   NewCatalogItem,
   NewItemInput,
   Profile,
+  ReleaseStatus,
 } from './types';

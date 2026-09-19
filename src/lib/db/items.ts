@@ -45,7 +45,7 @@ export async function findItemByTitleAndType(
 }
 
 export async function addCatalogItemToLibrary(
-  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'>,
+  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus'>,
   status: ItemStatus,
 ): Promise<Item> {
   const existing = await findItemByTitleAndType(catalogItem.title, catalogItem.mediaType);
@@ -60,6 +60,7 @@ export async function addCatalogItemToLibrary(
     rating: null,
     notes: null,
     coverImageUrl: catalogItem.coverImageUrl,
+    releaseStatus: catalogItem.releaseStatus ?? null,
   });
 }
 

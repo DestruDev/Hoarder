@@ -1,10 +1,14 @@
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { LibraryStatusControl } from '@/components/library-status-control';
-import { MediaCover } from '@/components/media-cover';
-import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { findItemByTitleAndType, getCatalogItemById, type CatalogItem, type Item } from '@/lib/db';
+import { MediaDetail } from '@/components/media-detail';
+import { Screen, Text } from '@/components/themed';
+import {
+  findItemByTitleAndType,
+  getCatalogItemById,
+  type CatalogItem,
+  type Item,
+} from '@/lib/db';
 
 export default function CatalogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,6 +67,7 @@ export default function CatalogDetailScreen() {
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Title' }} />
         <Text>{error}</Text>
       </Screen>
     );
@@ -71,6 +76,7 @@ export default function CatalogDetailScreen() {
   if (!loaded) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Title' }} />
         <Text>Loading...</Text>
       </Screen>
     );
@@ -79,22 +85,18 @@ export default function CatalogDetailScreen() {
   if (!item) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Title' }} />
         <Text>Title not found.</Text>
       </Screen>
     );
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
-      <Stack.Screen options={{ title: item.title }} />
-      <MediaCover uri={item.coverImageUrl} width={140} height={200} />
-      <Text>Title: {item.title}</Text>
-      <Text>Type: {item.mediaType}</Text>
-      <LibraryStatusControl
-        media={item}
-        libraryItem={libraryItem}
-        onLibraryItemChange={setLibraryItem}
-      />
-    </ScreenScrollView>
+    <MediaDetail
+      media={item}
+      libraryItem={libraryItem}
+      onLibraryItemChange={setLibraryItem}
+      onRemoved={() => setLibraryItem(undefined)}
+    />
   );
 }

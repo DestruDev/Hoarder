@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { db } from './client';
 import { catalog } from './schema';
@@ -14,5 +14,18 @@ export async function getCatalogItems(mediaType?: MediaType): Promise<CatalogIte
 
 export async function getCatalogItemById(id: number): Promise<CatalogItem | undefined> {
   const [item] = await db.select().from(catalog).where(eq(catalog.id, id)).limit(1);
+  return item;
+}
+
+export async function findCatalogItemByTitleAndType(
+  title: string,
+  mediaType: MediaType,
+): Promise<CatalogItem | undefined> {
+  const [item] = await db
+    .select()
+    .from(catalog)
+    .where(and(eq(catalog.title, title), eq(catalog.mediaType, mediaType)))
+    .limit(1);
+
   return item;
 }

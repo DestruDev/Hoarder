@@ -13,6 +13,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 9,
     notes: 'Comfort reread. Still holds up.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2024-11-02T18:20:00.000Z',
   },
   {
@@ -22,6 +23,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 8,
     notes: 'Halfway through. Rocky is the best.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2025-03-14T12:00:00.000Z',
   },
   {
@@ -31,6 +33,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 10,
     notes: null,
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2024-08-21T21:15:00.000Z',
   },
   {
@@ -40,6 +43,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: null,
     notes: 'Want to rewatch Part One first.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2026-01-09T16:40:00.000Z',
   },
   {
@@ -49,6 +53,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 8,
     notes: 'On season 3.',
     coverImageUrl: null,
+    releaseStatus: 'releasing',
     dateAdded: '2025-06-02T19:05:00.000Z',
   },
   {
@@ -58,6 +63,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: null,
     notes: null,
     coverImageUrl: null,
+    releaseStatus: 'released',
     dateAdded: '2026-04-18T10:30:00.000Z',
   },
   {
@@ -67,6 +73,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 10,
     notes: 'Caught up. Waiting on the next cour.',
     coverImageUrl: null,
+    releaseStatus: 'releasing',
     dateAdded: '2025-01-22T08:00:00.000Z',
   },
   {
@@ -76,6 +83,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: 10,
     notes: 'Read the manga after finishing the show.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2023-12-11T14:55:00.000Z',
   },
   {
@@ -85,6 +93,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: null,
     notes: 'Next after Hades.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2026-02-01T15:00:00.000Z',
   },
   {
@@ -94,6 +103,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     rating: null,
     notes: 'Escaped once. Still have heat 8 runs to do.',
     coverImageUrl: null,
+    releaseStatus: null,
     dateAdded: '2024-05-30T01:12:00.000Z',
   },
 ];

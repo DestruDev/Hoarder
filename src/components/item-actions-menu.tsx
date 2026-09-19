@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -12,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
-import { deleteItem, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
-import { STATUS_LABELS } from '@/lib/status-labels';
+import { deleteItem, ITEM_STATUSES, isShowMediaType, RELEASE_STATUSES, updateItem, type Item, type ItemStatus, type ReleaseStatus } from '@/lib/db';
+import { RELEASE_STATUS_LABELS, STATUS_LABELS } from '@/lib/status-labels';
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -30,6 +31,7 @@ export function ItemActionsMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [status, setStatus] = useState<ItemStatus>(item.status);
+  const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(item.releaseStatus);
   const [score, setScore] = useState<number | null>(item.rating);
   const [notes, setNotes] = useState(item.notes ?? '');
   const [saving, setSaving] = useState(false);
@@ -46,6 +48,7 @@ export function ItemActionsMenu({
 
   function openEdit() {
     setStatus(item.status);
+    setReleaseStatus(item.releaseStatus);
     setScore(item.rating);
     setNotes(item.notes ?? '');
     setError(null);
@@ -74,6 +77,7 @@ export function ItemActionsMenu({
         status,
         rating: score,
         notes: notes.trim() || null,
+        releaseStatus: isShowMediaType(item.mediaType) ? releaseStatus : null,
       });
 
       if (!saved) {
@@ -107,8 +111,16 @@ export function ItemActionsMenu({
 
   return (
     <>
-      <Pressable onPress={openMenu} hitSlop={8} style={{ marginRight: 8 }}>
-        <Ionicons name="ellipsis-vertical" size={22} color={colors.text} />
+      <Pressable
+        onPress={openMenu}
+        hitSlop={8}
+        style={{
+          width: 44,
+          height: 44,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <MaterialIcons name="more-horiz" size={24} color={colors.text} />
       </Pressable>
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu}>
@@ -203,6 +215,34 @@ export function ItemActionsMenu({
                   </Pressable>
                 );
               })}
+
+              {isShowMediaType(item.mediaType) ? (
+                <>
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Release</Text>
+                  {RELEASE_STATUSES.map((value) => {
+                    const isSelected = releaseStatus === value;
+
+                    return (
+                      <Pressable
+                        key={value}
+                        onPress={() => setReleaseStatus(value)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
+                          borderColor: isSelected ? colors.text : colors.border,
+                          borderWidth: 1,
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 12,
+                        }}>
+                        <Text style={{ flex: 1 }}>{RELEASE_STATUS_LABELS[value]}</Text>
+                        {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </>
+              ) : null}
 
               <Text style={{ color: colors.textMuted, marginTop: 6 }}>Score</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

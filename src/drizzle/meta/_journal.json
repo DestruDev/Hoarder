@@ -29,6 +29,13 @@
       "when": 1789356279746,
       "tag": "0003_hard_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789809660561,
+      "tag": "0004_many_beast",
+      "breakpoints": true
     }
   ]
 }

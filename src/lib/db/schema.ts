@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import type { ItemStatus, MediaType } from './types';
+import type { ItemStatus, MediaType, ReleaseStatus } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -10,6 +10,7 @@ export const items = sqliteTable('items', {
   rating: integer('rating'),
   notes: text('notes'),
   coverImageUrl: text('cover_image_url'),
+  releaseStatus: text('release_status').$type<ReleaseStatus>(),
   dateAdded: text('date_added').notNull(),
 });
 
@@ -25,4 +26,5 @@ export const catalog = sqliteTable('catalog', {
   title: text('title').notNull(),
   mediaType: text('media_type').notNull().$type<MediaType>(),
   coverImageUrl: text('cover_image_url'),
+  releaseStatus: text('release_status').$type<ReleaseStatus>(),
 });

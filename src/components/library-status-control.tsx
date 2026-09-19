@@ -15,7 +15,7 @@ import {
 } from '@/lib/db';
 import { STATUS_LABELS } from '@/lib/status-labels';
 
-type LibraryMedia = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'>;
+type LibraryMedia = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus'>;
 
 export function LibraryStatusControl({
   media,

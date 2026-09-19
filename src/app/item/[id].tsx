@@ -1,11 +1,13 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { ItemActionsMenu } from '@/components/item-actions-menu';
-import { LibraryStatusControl } from '@/components/library-status-control';
-import { MediaCover } from '@/components/media-cover';
-import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { getItemById, type Item } from '@/lib/db';
+import { MediaDetail } from '@/components/media-detail';
+import { Screen, Text } from '@/components/themed';
+import {
+  findCatalogItemByTitleAndType,
+  getItemById,
+  type Item,
+} from '@/lib/db';
 
 export default function ItemDetailScreen() {
   const router = useRouter();
@@ -15,6 +17,8 @@ export default function ItemDetailScreen() {
   const [item, setItem] = useState<Item | undefined>();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [releaseStatus, setReleaseStatus] = useState<Item['releaseStatus']>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -27,16 +31,29 @@ export default function ItemDetailScreen() {
       }
 
       getItemById(itemId)
-        .then((row) => {
-          if (!cancelled) {
-            setItem(row);
-            setError(null);
-            setLoaded(true);
+        .then(async (row) => {
+          if (cancelled) {
+            return;
+          }
+
+          setItem(row);
+          setError(null);
+
+          if (row) {
+            const catalogItem = await findCatalogItemByTitleAndType(row.title, row.mediaType);
+            if (!cancelled) {
+              setCoverImageUrl(row.coverImageUrl ?? catalogItem?.coverImageUrl ?? null);
+              setReleaseStatus(row.releaseStatus ?? catalogItem?.releaseStatus ?? null);
+            }
           }
         })
         .catch((loadError: unknown) => {
           if (!cancelled) {
             setError(loadError instanceof Error ? loadError.message : 'Failed to load item');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
             setLoaded(true);
           }
         });
@@ -50,6 +67,7 @@ export default function ItemDetailScreen() {
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Item' }} />
         <Text>{error}</Text>
       </Screen>
     );
@@ -58,6 +76,7 @@ export default function ItemDetailScreen() {
   if (!loaded) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Item' }} />
         <Text>Loading...</Text>
       </Screen>
     );
@@ -66,28 +85,29 @@ export default function ItemDetailScreen() {
   if (!item) {
     return (
       <Screen style={{ padding: 16 }}>
+        <Stack.Screen options={{ title: 'Item' }} />
         <Text>Item not found.</Text>
       </Screen>
     );
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
-      <Stack.Screen
-        options={{
-          title: item.title,
-          headerRight: () => (
-            <ItemActionsMenu item={item} onItemChange={setItem} onRemoved={() => router.back()} />
-          ),
-        }}
-      />
-      <MediaCover uri={item.coverImageUrl} width={140} height={200} />
-      <Text>Title: {item.title}</Text>
-      <Text>Type: {item.mediaType}</Text>
-      <Text>Rating: {item.rating ?? '—'}</Text>
-      <Text>Notes: {item.notes ?? '—'}</Text>
-      <Text>Added: {item.dateAdded}</Text>
-      <LibraryStatusControl media={item} libraryItem={item} onLibraryItemChange={setItem} />
-    </ScreenScrollView>
+    <MediaDetail
+      media={{
+        title: item.title,
+        mediaType: item.mediaType,
+        coverImageUrl,
+        releaseStatus,
+      }}
+      libraryItem={item}
+      onLibraryItemChange={(next) => {
+        setItem(next);
+        if (next) {
+          setCoverImageUrl(next.coverImageUrl ?? coverImageUrl);
+          setReleaseStatus(next.releaseStatus ?? releaseStatus);
+        }
+      }}
+      onRemoved={() => router.back()}
+    />
   );
 }
