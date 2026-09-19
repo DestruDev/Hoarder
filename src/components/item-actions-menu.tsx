@@ -13,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
-import { deleteItem, ITEM_STATUSES, isShowMediaType, RELEASE_STATUSES, updateItem, type Item, type ItemStatus, type ReleaseStatus } from '@/lib/db';
-import { RELEASE_STATUS_LABELS, STATUS_LABELS } from '@/lib/status-labels';
+import { COMIC_ORIGINS, deleteItem, ITEM_STATUSES, isComicMediaType, isShowMediaType, RELEASE_STATUSES, updateItem, type ComicOrigin, type Item, type ItemStatus, type ReleaseStatus } from '@/lib/db';
+import { COMIC_ORIGIN_LABELS, RELEASE_STATUS_LABELS, STATUS_LABELS } from '@/lib/status-labels';
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -32,6 +32,7 @@ export function ItemActionsMenu({
   const [editOpen, setEditOpen] = useState(false);
   const [status, setStatus] = useState<ItemStatus>(item.status);
   const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(item.releaseStatus);
+  const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin | null>(item.mangaOrigin);
   const [score, setScore] = useState<number | null>(item.rating);
   const [notes, setNotes] = useState(item.notes ?? '');
   const [saving, setSaving] = useState(false);
@@ -49,6 +50,7 @@ export function ItemActionsMenu({
   function openEdit() {
     setStatus(item.status);
     setReleaseStatus(item.releaseStatus);
+    setMangaOrigin(item.mangaOrigin);
     setScore(item.rating);
     setNotes(item.notes ?? '');
     setError(null);
@@ -78,6 +80,7 @@ export function ItemActionsMenu({
         rating: score,
         notes: notes.trim() || null,
         releaseStatus: isShowMediaType(item.mediaType) ? releaseStatus : null,
+        mangaOrigin: isComicMediaType(item.mediaType) ? mangaOrigin : null,
       });
 
       if (!saved) {
@@ -215,6 +218,34 @@ export function ItemActionsMenu({
                   </Pressable>
                 );
               })}
+
+              {isComicMediaType(item.mediaType) ? (
+                <>
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Type</Text>
+                  {COMIC_ORIGINS.map((value) => {
+                    const isSelected = mangaOrigin === value;
+
+                    return (
+                      <Pressable
+                        key={value}
+                        onPress={() => setMangaOrigin(value)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
+                          borderColor: isSelected ? colors.text : colors.border,
+                          borderWidth: 1,
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 12,
+                        }}>
+                        <Text style={{ flex: 1 }}>{`Comic (${COMIC_ORIGIN_LABELS[value]})`}</Text>
+                        {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </>
+              ) : null}
 
               {isShowMediaType(item.mediaType) ? (
                 <>

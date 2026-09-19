@@ -45,7 +45,7 @@ export async function findItemByTitleAndType(
 }
 
 export async function addCatalogItemToLibrary(
-  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus'>,
+  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin'>,
   status: ItemStatus,
 ): Promise<Item> {
   const existing = await findItemByTitleAndType(catalogItem.title, catalogItem.mediaType);
@@ -61,6 +61,7 @@ export async function addCatalogItemToLibrary(
     notes: null,
     coverImageUrl: catalogItem.coverImageUrl,
     releaseStatus: catalogItem.releaseStatus ?? null,
+    mangaOrigin: catalogItem.mangaOrigin ?? null,
   });
 }
 

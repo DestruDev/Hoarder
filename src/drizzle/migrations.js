@@ -6,6 +6,8 @@ import m0001 from './0001_minor_firestar.sql';
 import m0002 from './0002_normal_prism.sql';
 import m0003 from './0003_hard_paibok.sql';
 import m0004 from './0004_many_beast.sql';
+import m0005 from './0005_modern_blue_marvel.sql';
+import m0006 from './0006_rename_manga_to_comic.sql';
 
   export default {
     journal,
@@ -14,7 +16,9 @@ import m0004 from './0004_many_beast.sql';
 m0001,
 m0002,
 m0003,
-m0004
+m0004,
+m0005,
+m0006
     }
   }
   

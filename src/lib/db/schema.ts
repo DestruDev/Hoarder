@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import type { ItemStatus, MediaType, ReleaseStatus } from './types';
+import type { ComicOrigin, ItemStatus, MediaType, ReleaseStatus } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -11,6 +11,7 @@ export const items = sqliteTable('items', {
   notes: text('notes'),
   coverImageUrl: text('cover_image_url'),
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
+  mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
   dateAdded: text('date_added').notNull(),
 });
 
@@ -27,4 +28,5 @@ export const catalog = sqliteTable('catalog', {
   mediaType: text('media_type').notNull().$type<MediaType>(),
   coverImageUrl: text('cover_image_url'),
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
+  mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
 });

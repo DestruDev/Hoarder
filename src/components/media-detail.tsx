@@ -5,9 +5,12 @@ import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
-import { MEDIA_TYPE_LABELS, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
+import { mediaTypeLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
 
-export type MediaDetails = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus'>;
+export type MediaDetails = Pick<
+  CatalogItem,
+  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin'
+>;
 
 export function MediaDetail({
   media,
@@ -42,7 +45,7 @@ export function MediaDetail({
       />
       <MediaCover uri={media.coverImageUrl} width={140} height={200} />
       <Text>Title: {media.title}</Text>
-      <Text>Type: {MEDIA_TYPE_LABELS[media.mediaType]}</Text>
+      <Text>Type: {mediaTypeLabel(media.mediaType, media.mangaOrigin)}</Text>
       {isShowMediaType(media.mediaType) ? (
         <Text>
           Status: {media.releaseStatus ? RELEASE_STATUS_LABELS[media.releaseStatus] : '—'}

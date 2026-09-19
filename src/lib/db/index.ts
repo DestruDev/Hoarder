@@ -18,9 +18,10 @@ export {
 export { getProfile, saveProfile } from './profile-store';
 export { resetAndSeed, SAMPLE_ITEMS, seedIfEmpty, seedItems } from './seed';
 export { catalog, items, profile } from './schema';
-export { ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isShowMediaType } from './types';
+export { COMIC_ORIGINS, ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isComicMediaType, isShowMediaType } from './types';
 export type {
   CatalogItem,
+  ComicOrigin,
   Item,
   ItemFilters,
   ItemStatus,

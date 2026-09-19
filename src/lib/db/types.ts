@@ -3,8 +3,7 @@ export const MEDIA_TYPES = [
   'movie',
   'tv',
   'anime',
-  'manga',
-  'manhwa',
+  'comic',
   'game',
   'other',
 ] as const;
@@ -31,6 +30,14 @@ export function isShowMediaType(mediaType: MediaType): boolean {
   return mediaType === 'tv' || mediaType === 'anime';
 }
 
+export const COMIC_ORIGINS = ['japanese', 'south_korean', 'chinese'] as const;
+
+export type ComicOrigin = (typeof COMIC_ORIGINS)[number];
+
+export function isComicMediaType(mediaType: MediaType): boolean {
+  return mediaType === 'comic';
+}
+
 export type Item = {
   id: number;
   title: string;
@@ -40,6 +47,7 @@ export type Item = {
   notes: string | null;
   coverImageUrl: string | null;
   releaseStatus: ReleaseStatus | null;
+  mangaOrigin: ComicOrigin | null;
   dateAdded: string;
 };
 
@@ -64,8 +72,10 @@ export type CatalogItem = {
   mediaType: MediaType;
   coverImageUrl: string | null;
   releaseStatus: ReleaseStatus | null;
+  mangaOrigin: ComicOrigin | null;
 };
 
-export type NewCatalogItem = Omit<CatalogItem, 'id' | 'releaseStatus'> & {
+export type NewCatalogItem = Omit<CatalogItem, 'id' | 'releaseStatus' | 'mangaOrigin'> & {
   releaseStatus?: ReleaseStatus | null;
+  mangaOrigin?: ComicOrigin | null;
 };

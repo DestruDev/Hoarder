@@ -9,7 +9,7 @@ import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { getItems, ITEM_STATUSES, type Item, type ItemStatus } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-import { MEDIA_TYPE_LABELS, STATUS_LABELS } from '@/lib/status-labels';
+import { mediaTypeLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
   const { query } = useMediaSearch();
@@ -105,7 +105,7 @@ export default function LibraryScreen() {
                       <Pressable style={{ paddingHorizontal: 4, paddingVertical: 2 }}>
                         <MediaRow
                           title={item.title}
-                          subtitle={`${MEDIA_TYPE_LABELS[item.mediaType]}${item.rating != null ? ` · ${item.rating}` : ''}`}
+                          subtitle={`${mediaTypeLabel(item.mediaType, item.mangaOrigin)}${item.rating != null ? ` · ${item.rating}` : ''}`}
                           coverImageUrl={item.coverImageUrl}
                         />
                       </Pressable>

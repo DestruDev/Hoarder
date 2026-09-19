@@ -7,13 +7,13 @@ import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { getCatalogItems, type CatalogItem, type MediaType } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-import { MEDIA_TYPE_LABELS } from '@/lib/status-labels';
+import { mediaTypeLabel } from '@/lib/status-labels';
 
 const TRENDING_SECTIONS: { id: string; title: string; types: MediaType[] }[] = [
   { id: 'tv', title: 'Trending TV', types: ['tv'] },
   { id: 'game', title: 'Trending Games', types: ['game'] },
   { id: 'anime', title: 'Trending Anime', types: ['anime'] },
-  { id: 'manga-manhwa', title: 'Trending Manga / Manhwa', types: ['manga', 'manhwa'] },
+  { id: 'comic', title: 'Trending Comic', types: ['comic'] },
   { id: 'book', title: 'Trending Books', types: ['book'] },
 ];
 
@@ -73,7 +73,7 @@ export default function ExploreScreen() {
                 <Pressable>
                   <MediaRow
                     title={item.title}
-                    subtitle={MEDIA_TYPE_LABELS[item.mediaType]}
+                    subtitle={mediaTypeLabel(item.mediaType, item.mangaOrigin)}
                     coverImageUrl={item.coverImageUrl}
                   />
                 </Pressable>
