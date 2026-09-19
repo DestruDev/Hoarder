@@ -7,6 +7,7 @@ import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { getCatalogItems, type CatalogItem, type MediaType } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
+import { MEDIA_TYPE_LABELS } from '@/lib/status-labels';
 
 const TRENDING_SECTIONS: { id: string; title: string; types: MediaType[] }[] = [
   { id: 'tv', title: 'Trending TV', types: ['tv'] },
@@ -72,7 +73,7 @@ export default function ExploreScreen() {
                 <Pressable>
                   <MediaRow
                     title={item.title}
-                    subtitle={item.mediaType}
+                    subtitle={MEDIA_TYPE_LABELS[item.mediaType]}
                     coverImageUrl={item.coverImageUrl}
                   />
                 </Pressable>
