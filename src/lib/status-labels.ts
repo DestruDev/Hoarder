@@ -78,12 +78,14 @@ export function progressCountLabel(
 export function progressValueLabel(
   current?: number | null,
   total?: number | null,
+  completed = false,
 ): string | null {
-  const hasCurrent = current != null && current >= 0;
   const hasTotal = total != null && total >= 0;
+  const effectiveCurrent = completed && hasTotal ? total : current;
+  const hasCurrent = effectiveCurrent != null && effectiveCurrent >= 0;
 
   if (hasCurrent && hasTotal) {
-    return `${current} / ${total}`;
+    return `${effectiveCurrent} / ${total}`;
   }
 
   if (hasTotal) {
@@ -91,7 +93,7 @@ export function progressValueLabel(
   }
 
   if (hasCurrent) {
-    return String(current);
+    return String(effectiveCurrent);
   }
 
   return null;
@@ -107,6 +109,7 @@ export function libraryCountLabel(
     totalPages,
     currentChapters,
     totalChapters,
+    completed = false,
   }: {
     mangaOrigin?: ComicOrigin | null;
     currentEpisodes?: number | null;
@@ -115,6 +118,7 @@ export function libraryCountLabel(
     totalPages?: number | null;
     currentChapters?: number | null;
     totalChapters?: number | null;
+    completed?: boolean;
   } = {},
 ): string {
   if (mediaType === 'movie') {
@@ -123,22 +127,34 @@ export function libraryCountLabel(
 
   if (isShowMediaType(mediaType)) {
     return (
-      progressCountLabel(currentEpisodes, totalEpisodes, 'episode', 'episodes') ??
-      mediaTypeLabel(mediaType, mangaOrigin)
+      progressCountLabel(
+        completed ? null : currentEpisodes,
+        totalEpisodes,
+        'episode',
+        'episodes',
+      ) ?? mediaTypeLabel(mediaType, mangaOrigin)
     );
   }
 
   if (isChapteredMediaType(mediaType, mangaOrigin)) {
     return (
-      progressCountLabel(currentChapters, totalChapters, 'chapter', 'chapters') ??
-      mediaTypeLabel(mediaType, mangaOrigin)
+      progressCountLabel(
+        completed ? null : currentChapters,
+        totalChapters,
+        'chapter',
+        'chapters',
+      ) ?? mediaTypeLabel(mediaType, mangaOrigin)
     );
   }
 
   if (isPagedMediaType(mediaType, mangaOrigin)) {
     return (
-      progressCountLabel(currentPages, totalPages, 'page', 'pages') ??
-      mediaTypeLabel(mediaType, mangaOrigin)
+      progressCountLabel(
+        completed ? null : currentPages,
+        totalPages,
+        'page',
+        'pages',
+      ) ?? mediaTypeLabel(mediaType, mangaOrigin)
     );
   }
 

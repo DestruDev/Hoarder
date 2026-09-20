@@ -26,21 +26,29 @@ export function MediaDetail({
   const totalEpisodes = media.totalEpisodes ?? libraryItem?.totalEpisodes;
   const totalPages = libraryItem?.totalPages ?? media.totalPages;
   const totalChapters = libraryItem?.totalChapters ?? media.totalChapters;
-  const episodeProgress = progressValueLabel(libraryItem?.currentEpisodes, totalEpisodes);
-  const chapterProgress = progressValueLabel(libraryItem?.currentChapters, totalChapters);
-  const pageProgress = progressValueLabel(libraryItem?.currentPages, totalPages);
+  const isCompleted = libraryItem?.status === 'completed';
+  const episodeProgress = progressValueLabel(
+    isCompleted ? totalEpisodes : libraryItem?.currentEpisodes,
+    totalEpisodes,
+  );
+  const chapterProgress = progressValueLabel(
+    isCompleted ? totalChapters : libraryItem?.currentChapters,
+    totalChapters,
+  );
+  const pageProgress = progressValueLabel(
+    isCompleted ? totalPages : libraryItem?.currentPages,
+    totalPages,
+  );
 
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
       <Stack.Screen
         options={{
           title: media.title,
-          headerRightContainerStyle: { justifyContent: 'center' },
           headerRight: libraryItem
             ? () => (
                 <ItemActionsMenu
                   item={libraryItem}
-                  onItemChange={onLibraryItemChange}
                   onRemoved={() => {
                     onLibraryItemChange(undefined);
                     onRemoved();

@@ -64,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
         <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
+        <Stack.Screen name="edit/[id]" options={{ title: 'Edit' }} />
         <Stack.Screen name="form" options={{ title: 'Item' }} />
         <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
       </Stack>

@@ -123,6 +123,7 @@ export default function LibraryScreen() {
                               totalPages: item.totalPages,
                               currentChapters: item.currentChapters,
                               totalChapters: item.totalChapters,
+                              completed: item.status === 'completed',
                             })}
                             rating={item.rating}
                             coverImageUrl={item.coverImageUrl}
