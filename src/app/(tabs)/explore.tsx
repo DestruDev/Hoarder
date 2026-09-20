@@ -1,13 +1,12 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
-import { MediaRow } from '@/components/media-cover';
+import { MediaPoster } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { getCatalogItems, type CatalogItem, type MediaType } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-import { mediaTypeLabel } from '@/lib/status-labels';
 
 const TRENDING_SECTIONS: { id: string; title: string; types: MediaType[] }[] = [
   { id: 'tv', title: 'Trending TV', types: ['tv'] },
@@ -65,20 +64,21 @@ export default function ExploreScreen() {
         sections.map((section) => (
           <View key={section.id} style={{ gap: 10 }}>
             <Text style={{ fontSize: 18 }}>{section.title}</Text>
-            {section.items.map((item) => (
-              <Link
-                key={item.id}
-                href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
-                asChild>
-                <Pressable>
-                  <MediaRow
-                    title={item.title}
-                    subtitle={mediaTypeLabel(item.mediaType, item.mangaOrigin)}
-                    coverImageUrl={item.coverImageUrl}
-                  />
-                </Pressable>
-              </Link>
-            ))}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
+              {section.items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
+                  asChild>
+                  <Pressable>
+                    <MediaPoster title={item.title} coverImageUrl={item.coverImageUrl} />
+                  </Pressable>
+                </Link>
+              ))}
+            </ScrollView>
           </View>
         ))
       )}

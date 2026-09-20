@@ -18,6 +18,20 @@ import { COMIC_ORIGIN_LABELS, RELEASE_STATUS_LABELS, STATUS_LABELS } from '@/lib
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+function parseTotalEpisodes(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed) || parsed < 0 || String(parsed) !== trimmed) {
+    throw new Error('Total episodes must be a whole number');
+  }
+
+  return parsed;
+}
+
 export function ItemActionsMenu({
   item,
   onItemChange,
@@ -34,6 +48,9 @@ export function ItemActionsMenu({
   const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(item.releaseStatus);
   const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin | null>(item.mangaOrigin);
   const [score, setScore] = useState<number | null>(item.rating);
+  const [totalEpisodes, setTotalEpisodes] = useState(
+    item.totalEpisodes != null ? String(item.totalEpisodes) : '',
+  );
   const [notes, setNotes] = useState(item.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -52,6 +69,7 @@ export function ItemActionsMenu({
     setReleaseStatus(item.releaseStatus);
     setMangaOrigin(item.mangaOrigin);
     setScore(item.rating);
+    setTotalEpisodes(item.totalEpisodes != null ? String(item.totalEpisodes) : '');
     setNotes(item.notes ?? '');
     setError(null);
     setMenuOpen(false);
@@ -81,6 +99,7 @@ export function ItemActionsMenu({
         notes: notes.trim() || null,
         releaseStatus: isShowMediaType(item.mediaType) ? releaseStatus : null,
         mangaOrigin: isComicMediaType(item.mediaType) ? mangaOrigin : null,
+        totalEpisodes: isShowMediaType(item.mediaType) ? parseTotalEpisodes(totalEpisodes) : null,
       });
 
       if (!saved) {
@@ -272,6 +291,18 @@ export function ItemActionsMenu({
                       </Pressable>
                     );
                   })}
+                </>
+              ) : null}
+
+              {isShowMediaType(item.mediaType) ? (
+                <>
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Total episodes</Text>
+                  <TextInput
+                    value={totalEpisodes}
+                    onChangeText={setTotalEpisodes}
+                    placeholder="e.g. 12"
+                    keyboardType="number-pad"
+                  />
                 </>
               ) : null}
 

@@ -40,3 +40,19 @@ export function mediaTypeLabel(
 
   return MEDIA_TYPE_LABELS[mediaType];
 }
+
+export function episodeCountLabel(
+  mediaType: MediaType,
+  totalEpisodes?: number | null,
+  mangaOrigin?: ComicOrigin | null,
+): string {
+  if (mediaType === 'movie') {
+    return 'Movie';
+  }
+
+  if (totalEpisodes != null && totalEpisodes >= 0) {
+    return totalEpisodes === 1 ? '1 episode' : `${totalEpisodes} episodes`;
+  }
+
+  return mediaTypeLabel(mediaType, mangaOrigin);
+}

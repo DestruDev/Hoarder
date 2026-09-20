@@ -5,17 +5,19 @@ import { Pressable, View } from 'react-native';
 
 import { MediaRow } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
+import { NotesModal } from '@/components/notes-modal';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
-import { getItems, ITEM_STATUSES, type Item, type ItemStatus } from '@/lib/db';
+import { getItems, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-import { mediaTypeLabel, STATUS_LABELS } from '@/lib/status-labels';
+import { episodeCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
   const { query } = useMediaSearch();
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Partial<Record<ItemStatus, boolean>>>({});
+  const [notesItem, setNotesItem] = useState<Item | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,24 +100,63 @@ export default function LibraryScreen() {
 
               {isOpen
                 ? group.items.map((item) => (
-                    <Link
+                    <View
                       key={item.id}
-                      href={{ pathname: '/item/[id]', params: { id: String(item.id) } }}
-                      asChild>
-                      <Pressable style={{ paddingHorizontal: 4, paddingVertical: 2 }}>
-                        <MediaRow
-                          title={item.title}
-                          subtitle={`${mediaTypeLabel(item.mediaType, item.mangaOrigin)}${item.rating != null ? ` · ${item.rating}` : ''}`}
-                          coverImageUrl={item.coverImageUrl}
-                        />
-                      </Pressable>
-                    </Link>
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: 4,
+                        paddingVertical: 2,
+                        gap: 4,
+                      }}>
+                      <Link
+                        href={{ pathname: '/item/[id]', params: { id: String(item.id) } }}
+                        asChild>
+                        <Pressable style={{ flex: 1 }}>
+                          <MediaRow
+                            title={item.title}
+                            subtitle={`${episodeCountLabel(item.mediaType, item.totalEpisodes, item.mangaOrigin)}${item.rating != null ? ` · ${item.rating}` : ''}`}
+                            coverImageUrl={item.coverImageUrl}
+                          />
+                        </Pressable>
+                      </Link>
+                      {item.notes?.trim() ? (
+                        <Pressable
+                          onPress={() => setNotesItem(item)}
+                          hitSlop={8}
+                          style={{ padding: 8 }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Open notes">
+                          <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
+                        </Pressable>
+                      ) : null}
+                    </View>
                   ))
                 : null}
             </View>
           );
         })
       )}
+
+      <NotesModal
+        visible={notesItem != null}
+        title={notesItem?.title ?? ''}
+        notes={notesItem?.notes ?? ''}
+        onClose={() => setNotesItem(null)}
+        onSave={async (notes) => {
+          if (!notesItem) {
+            return;
+          }
+
+          const saved = await updateItem(notesItem.id, { notes: notes || null });
+          if (!saved) {
+            throw new Error('Failed to save notes');
+          }
+
+          setItems((current) => current.map((item) => (item.id === saved.id ? saved : item)));
+          setNotesItem(saved.notes?.trim() ? saved : null);
+        }}
+      />
     </ScreenScrollView>
   );
 }

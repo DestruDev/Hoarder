@@ -15,7 +15,10 @@ import {
 } from '@/lib/db';
 import { STATUS_LABELS } from '@/lib/status-labels';
 
-type LibraryMedia = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin'>;
+type LibraryMedia = Pick<
+  CatalogItem,
+  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes'
+>;
 
 export function LibraryStatusControl({
   media,

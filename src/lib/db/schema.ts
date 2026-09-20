@@ -12,6 +12,7 @@ export const items = sqliteTable('items', {
   coverImageUrl: text('cover_image_url'),
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
   mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
+  totalEpisodes: integer('total_episodes'),
   dateAdded: text('date_added').notNull(),
 });
 
@@ -29,4 +30,5 @@ export const catalog = sqliteTable('catalog', {
   coverImageUrl: text('cover_image_url'),
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
   mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
+  totalEpisodes: integer('total_episodes'),
 });

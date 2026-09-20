@@ -15,6 +15,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2024-11-02T18:20:00.000Z',
   },
   {
@@ -26,6 +27,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2025-03-14T12:00:00.000Z',
   },
   {
@@ -37,6 +39,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2024-08-21T21:15:00.000Z',
   },
   {
@@ -48,6 +51,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2026-01-09T16:40:00.000Z',
   },
   {
@@ -59,6 +63,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: 'releasing',
     mangaOrigin: null,
+    totalEpisodes: 38,
     dateAdded: '2025-06-02T19:05:00.000Z',
   },
   {
@@ -70,6 +75,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: 'released',
     mangaOrigin: null,
+    totalEpisodes: 24,
     dateAdded: '2026-04-18T10:30:00.000Z',
   },
   {
@@ -81,6 +87,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: 'releasing',
     mangaOrigin: null,
+    totalEpisodes: 28,
     dateAdded: '2025-01-22T08:00:00.000Z',
   },
   {
@@ -92,6 +99,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: 'japanese',
+    totalEpisodes: null,
     dateAdded: '2023-12-11T14:55:00.000Z',
   },
   {
@@ -103,6 +111,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2026-02-01T15:00:00.000Z',
   },
   {
@@ -114,6 +123,7 @@ export const SAMPLE_ITEMS: SampleItem[] = [
     coverImageUrl: null,
     releaseStatus: null,
     mangaOrigin: null,
+    totalEpisodes: null,
     dateAdded: '2024-05-30T01:12:00.000Z',
   },
 ];

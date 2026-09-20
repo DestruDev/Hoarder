@@ -54,3 +54,22 @@ export function MediaRow({
     </View>
   );
 }
+
+export function MediaPoster({
+  title,
+  coverImageUrl,
+  width = 120,
+  height = 168,
+}: {
+  title: string;
+  coverImageUrl?: string | null;
+  width?: number;
+  height?: number;
+}) {
+  return (
+    <View style={{ width, gap: 8 }}>
+      <MediaCover uri={coverImageUrl} width={width} height={height} />
+      <Text numberOfLines={2}>{title}</Text>
+    </View>
+  );
+}

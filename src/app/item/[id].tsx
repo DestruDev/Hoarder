@@ -20,6 +20,7 @@ export default function ItemDetailScreen() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [releaseStatus, setReleaseStatus] = useState<Item['releaseStatus']>(null);
   const [mangaOrigin, setMangaOrigin] = useState<Item['mangaOrigin']>(null);
+  const [totalEpisodes, setTotalEpisodes] = useState<Item['totalEpisodes']>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +47,7 @@ export default function ItemDetailScreen() {
               setCoverImageUrl(row.coverImageUrl ?? catalogItem?.coverImageUrl ?? null);
               setReleaseStatus(row.releaseStatus ?? catalogItem?.releaseStatus ?? null);
               setMangaOrigin(row.mangaOrigin ?? catalogItem?.mangaOrigin ?? null);
+              setTotalEpisodes(row.totalEpisodes ?? catalogItem?.totalEpisodes ?? null);
             }
           }
         })
@@ -101,6 +103,7 @@ export default function ItemDetailScreen() {
         coverImageUrl,
         releaseStatus,
         mangaOrigin,
+        totalEpisodes,
       }}
       libraryItem={item}
       onLibraryItemChange={(next) => {
@@ -109,6 +112,7 @@ export default function ItemDetailScreen() {
           setCoverImageUrl(next.coverImageUrl ?? coverImageUrl);
           setReleaseStatus(next.releaseStatus ?? releaseStatus);
           setMangaOrigin(next.mangaOrigin ?? mangaOrigin);
+          setTotalEpisodes(next.totalEpisodes);
         }
       }}
       onRemoved={() => router.back()}

@@ -50,6 +50,13 @@
       "when": 1789812000000,
       "tag": "0006_rename_manga_to_comic",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789865557002,
+      "tag": "0007_pretty_leopardon",
+      "breakpoints": true
     }
   ]
 }

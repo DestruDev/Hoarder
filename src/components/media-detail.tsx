@@ -9,7 +9,7 @@ import { mediaTypeLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
 
 export type MediaDetails = Pick<
   CatalogItem,
-  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin'
+  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes'
 >;
 
 export function MediaDetail({
@@ -23,6 +23,8 @@ export function MediaDetail({
   onLibraryItemChange: (item: Item | undefined) => void;
   onRemoved: () => void;
 }) {
+  const totalEpisodes = libraryItem?.totalEpisodes ?? media.totalEpisodes;
+
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
       <Stack.Screen
@@ -51,9 +53,10 @@ export function MediaDetail({
           Status: {media.releaseStatus ? RELEASE_STATUS_LABELS[media.releaseStatus] : '—'}
         </Text>
       ) : null}
+      {isShowMediaType(media.mediaType) ? (
+        <Text>Episodes: {totalEpisodes ?? '—'}</Text>
+      ) : null}
       <Text>Rating: {libraryItem?.rating ?? '—'}</Text>
-      <Text>Notes: {libraryItem?.notes ?? '—'}</Text>
-      <Text>Added: {libraryItem?.dateAdded ?? '—'}</Text>
       <LibraryStatusControl
         media={media}
         libraryItem={libraryItem}

@@ -8,6 +8,7 @@ import m0003 from './0003_hard_paibok.sql';
 import m0004 from './0004_many_beast.sql';
 import m0005 from './0005_modern_blue_marvel.sql';
 import m0006 from './0006_rename_manga_to_comic.sql';
+import m0007 from './0007_pretty_leopardon.sql';
 
   export default {
     journal,
@@ -18,7 +19,8 @@ m0002,
 m0003,
 m0004,
 m0005,
-m0006
+m0006,
+m0007
     }
   }
   

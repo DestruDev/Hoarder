@@ -48,6 +48,7 @@ export type Item = {
   coverImageUrl: string | null;
   releaseStatus: ReleaseStatus | null;
   mangaOrigin: ComicOrigin | null;
+  totalEpisodes: number | null;
   dateAdded: string;
 };
 
@@ -73,9 +74,11 @@ export type CatalogItem = {
   coverImageUrl: string | null;
   releaseStatus: ReleaseStatus | null;
   mangaOrigin: ComicOrigin | null;
+  totalEpisodes: number | null;
 };
 
-export type NewCatalogItem = Omit<CatalogItem, 'id' | 'releaseStatus' | 'mangaOrigin'> & {
+export type NewCatalogItem = Omit<CatalogItem, 'id' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes'> & {
   releaseStatus?: ReleaseStatus | null;
   mangaOrigin?: ComicOrigin | null;
+  totalEpisodes?: number | null;
 };
