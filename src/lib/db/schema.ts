@@ -13,7 +13,13 @@ export const items = sqliteTable('items', {
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
   mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
   totalEpisodes: integer('total_episodes'),
+  totalPages: integer('total_pages'),
+  totalChapters: integer('total_chapters'),
+  currentEpisodes: integer('current_episodes'),
+  currentPages: integer('current_pages'),
+  currentChapters: integer('current_chapters'),
   dateAdded: text('date_added').notNull(),
+  finishDate: text('finish_date'),
 });
 
 export const profile = sqliteTable('profile', {
@@ -31,4 +37,6 @@ export const catalog = sqliteTable('catalog', {
   releaseStatus: text('release_status').$type<ReleaseStatus>(),
   mangaOrigin: text('manga_origin').$type<ComicOrigin>(),
   totalEpisodes: integer('total_episodes'),
+  totalPages: integer('total_pages'),
+  totalChapters: integer('total_chapters'),
 });

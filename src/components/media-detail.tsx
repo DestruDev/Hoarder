@@ -4,12 +4,12 @@ import { ItemActionsMenu } from '@/components/item-actions-menu';
 import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
-import { mediaTypeLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
+import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
+import { mediaTypeLabel, progressValueLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
 
 export type MediaDetails = Pick<
   CatalogItem,
-  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes'
+  'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes' | 'totalPages' | 'totalChapters'
 >;
 
 export function MediaDetail({
@@ -23,7 +23,12 @@ export function MediaDetail({
   onLibraryItemChange: (item: Item | undefined) => void;
   onRemoved: () => void;
 }) {
-  const totalEpisodes = libraryItem?.totalEpisodes ?? media.totalEpisodes;
+  const totalEpisodes = media.totalEpisodes ?? libraryItem?.totalEpisodes;
+  const totalPages = libraryItem?.totalPages ?? media.totalPages;
+  const totalChapters = libraryItem?.totalChapters ?? media.totalChapters;
+  const episodeProgress = progressValueLabel(libraryItem?.currentEpisodes, totalEpisodes);
+  const chapterProgress = progressValueLabel(libraryItem?.currentChapters, totalChapters);
+  const pageProgress = progressValueLabel(libraryItem?.currentPages, totalPages);
 
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
@@ -54,7 +59,13 @@ export function MediaDetail({
         </Text>
       ) : null}
       {isShowMediaType(media.mediaType) ? (
-        <Text>Episodes: {totalEpisodes ?? '—'}</Text>
+        <Text>Episodes: {episodeProgress ?? '—'}</Text>
+      ) : null}
+      {isChapteredMediaType(media.mediaType, media.mangaOrigin) ? (
+        <Text>Chapters: {chapterProgress ?? '—'}</Text>
+      ) : null}
+      {isPagedMediaType(media.mediaType, media.mangaOrigin) ? (
+        <Text>Pages: {pageProgress ?? '—'}</Text>
       ) : null}
       <Text>Rating: {libraryItem?.rating ?? '—'}</Text>
       <LibraryStatusControl

@@ -13,12 +13,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
-import { COMIC_ORIGINS, deleteItem, ITEM_STATUSES, isComicMediaType, isShowMediaType, RELEASE_STATUSES, updateItem, type ComicOrigin, type Item, type ItemStatus, type ReleaseStatus } from '@/lib/db';
-import { COMIC_ORIGIN_LABELS, RELEASE_STATUS_LABELS, STATUS_LABELS } from '@/lib/status-labels';
+import { COMIC_ORIGINS, deleteItem, ITEM_STATUSES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType, updateItem, type ComicOrigin, type Item, type ItemStatus } from '@/lib/db';
+import { COMIC_ORIGIN_LABELS, STATUS_LABELS } from '@/lib/status-labels';
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-function parseTotalEpisodes(value: string): number | null {
+function toDateInput(value?: string | null): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function parseDate(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    throw new Error(`${label} must be YYYY-MM-DD`);
+  }
+
+  const parsed = new Date(`${trimmed}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== trimmed) {
+    throw new Error(`${label} must be a valid date`);
+  }
+
+  return parsed.toISOString();
+}
+
+function parseOptionalDate(value: string, label: string): string | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  return parseDate(value, label);
+}
+
+function parseWholeNumber(value: string, label: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
@@ -26,7 +61,7 @@ function parseTotalEpisodes(value: string): number | null {
 
   const parsed = Number.parseInt(trimmed, 10);
   if (!Number.isFinite(parsed) || parsed < 0 || String(parsed) !== trimmed) {
-    throw new Error('Total episodes must be a whole number');
+    throw new Error(`${label} must be a whole number`);
   }
 
   return parsed;
@@ -45,12 +80,25 @@ export function ItemActionsMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [status, setStatus] = useState<ItemStatus>(item.status);
-  const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(item.releaseStatus);
-  const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin | null>(item.mangaOrigin);
+  const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin>(item.mangaOrigin ?? 'american');
   const [score, setScore] = useState<number | null>(item.rating);
-  const [totalEpisodes, setTotalEpisodes] = useState(
-    item.totalEpisodes != null ? String(item.totalEpisodes) : '',
+  const [currentEpisodes, setCurrentEpisodes] = useState(
+    item.currentEpisodes != null ? String(item.currentEpisodes) : '',
   );
+  const [currentPages, setCurrentPages] = useState(
+    item.currentPages != null ? String(item.currentPages) : '',
+  );
+  const [totalPages, setTotalPages] = useState(
+    item.totalPages != null ? String(item.totalPages) : '',
+  );
+  const [currentChapters, setCurrentChapters] = useState(
+    item.currentChapters != null ? String(item.currentChapters) : '',
+  );
+  const [totalChapters, setTotalChapters] = useState(
+    item.totalChapters != null ? String(item.totalChapters) : '',
+  );
+  const [startDate, setStartDate] = useState(toDateInput(item.dateAdded));
+  const [finishDate, setFinishDate] = useState(toDateInput(item.finishDate));
   const [notes, setNotes] = useState(item.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -66,10 +114,15 @@ export function ItemActionsMenu({
 
   function openEdit() {
     setStatus(item.status);
-    setReleaseStatus(item.releaseStatus);
-    setMangaOrigin(item.mangaOrigin);
+    setMangaOrigin(item.mangaOrigin ?? 'american');
     setScore(item.rating);
-    setTotalEpisodes(item.totalEpisodes != null ? String(item.totalEpisodes) : '');
+    setCurrentEpisodes(item.currentEpisodes != null ? String(item.currentEpisodes) : '');
+    setCurrentPages(item.currentPages != null ? String(item.currentPages) : '');
+    setTotalPages(item.totalPages != null ? String(item.totalPages) : '');
+    setCurrentChapters(item.currentChapters != null ? String(item.currentChapters) : '');
+    setTotalChapters(item.totalChapters != null ? String(item.totalChapters) : '');
+    setStartDate(toDateInput(item.dateAdded));
+    setFinishDate(toDateInput(item.finishDate));
     setNotes(item.notes ?? '');
     setError(null);
     setMenuOpen(false);
@@ -97,9 +150,24 @@ export function ItemActionsMenu({
         status,
         rating: score,
         notes: notes.trim() || null,
-        releaseStatus: isShowMediaType(item.mediaType) ? releaseStatus : null,
+        dateAdded: parseDate(startDate, 'Start date'),
+        finishDate: parseOptionalDate(finishDate, 'Finish date'),
         mangaOrigin: isComicMediaType(item.mediaType) ? mangaOrigin : null,
-        totalEpisodes: isShowMediaType(item.mediaType) ? parseTotalEpisodes(totalEpisodes) : null,
+        currentEpisodes: isShowMediaType(item.mediaType)
+          ? parseWholeNumber(currentEpisodes, 'Episodes watched')
+          : null,
+        currentPages: isPagedMediaType(item.mediaType, mangaOrigin)
+          ? parseWholeNumber(currentPages, 'Pages read')
+          : null,
+        totalPages: isPagedMediaType(item.mediaType, mangaOrigin)
+          ? parseWholeNumber(totalPages, 'Total pages')
+          : null,
+        currentChapters: isChapteredMediaType(item.mediaType, mangaOrigin)
+          ? parseWholeNumber(currentChapters, 'Chapters read')
+          : null,
+        totalChapters: isChapteredMediaType(item.mediaType, mangaOrigin)
+          ? parseWholeNumber(totalChapters, 'Total chapters')
+          : null,
       });
 
       if (!saved) {
@@ -238,6 +306,26 @@ export function ItemActionsMenu({
                 );
               })}
 
+              <Text style={{ color: colors.textMuted, marginTop: 6 }}>Start Date</Text>
+              <TextInput
+                value={startDate}
+                onChangeText={setStartDate}
+                placeholder="YYYY-MM-DD"
+                keyboardType="numbers-and-punctuation"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Text style={{ color: colors.textMuted, marginTop: 6 }}>Finish Date</Text>
+              <TextInput
+                value={finishDate}
+                onChangeText={setFinishDate}
+                placeholder="YYYY-MM-DD"
+                keyboardType="numbers-and-punctuation"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
               {isComicMediaType(item.mediaType) ? (
                 <>
                   <Text style={{ color: colors.textMuted, marginTop: 6 }}>Type</Text>
@@ -258,7 +346,7 @@ export function ItemActionsMenu({
                           paddingHorizontal: 14,
                           paddingVertical: 12,
                         }}>
-                        <Text style={{ flex: 1 }}>{`Comic (${COMIC_ORIGIN_LABELS[value]})`}</Text>
+                        <Text style={{ flex: 1 }}>{COMIC_ORIGIN_LABELS[value]}</Text>
                         {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
                       </Pressable>
                     );
@@ -268,41 +356,64 @@ export function ItemActionsMenu({
 
               {isShowMediaType(item.mediaType) ? (
                 <>
-                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Release</Text>
-                  {RELEASE_STATUSES.map((value) => {
-                    const isSelected = releaseStatus === value;
-
-                    return (
-                      <Pressable
-                        key={value}
-                        onPress={() => setReleaseStatus(value)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
-                          borderColor: isSelected ? colors.text : colors.border,
-                          borderWidth: 1,
-                          borderRadius: 10,
-                          paddingHorizontal: 14,
-                          paddingVertical: 12,
-                        }}>
-                        <Text style={{ flex: 1 }}>{RELEASE_STATUS_LABELS[value]}</Text>
-                        {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
-                      </Pressable>
-                    );
-                  })}
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Episodes</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      value={currentEpisodes}
+                      onChangeText={setCurrentEpisodes}
+                      placeholder="watched"
+                      keyboardType="number-pad"
+                      style={{ flex: 1 }}
+                    />
+                    <Text style={{ color: colors.textMuted }}>/</Text>
+                    <Text style={{ minWidth: 40 }}>{item.totalEpisodes ?? '—'}</Text>
+                  </View>
                 </>
               ) : null}
 
-              {isShowMediaType(item.mediaType) ? (
+              {isPagedMediaType(item.mediaType, mangaOrigin) ? (
                 <>
-                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Total episodes</Text>
-                  <TextInput
-                    value={totalEpisodes}
-                    onChangeText={setTotalEpisodes}
-                    placeholder="e.g. 12"
-                    keyboardType="number-pad"
-                  />
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Pages</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      value={currentPages}
+                      onChangeText={setCurrentPages}
+                      placeholder="read"
+                      keyboardType="number-pad"
+                      style={{ flex: 1 }}
+                    />
+                    <Text style={{ color: colors.textMuted }}>/</Text>
+                    <TextInput
+                      value={totalPages}
+                      onChangeText={setTotalPages}
+                      placeholder="total"
+                      keyboardType="number-pad"
+                      style={{ flex: 1 }}
+                    />
+                  </View>
+                </>
+              ) : null}
+
+              {isChapteredMediaType(item.mediaType, mangaOrigin) ? (
+                <>
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>Chapters</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      value={currentChapters}
+                      onChangeText={setCurrentChapters}
+                      placeholder="read"
+                      keyboardType="number-pad"
+                      style={{ flex: 1 }}
+                    />
+                    <Text style={{ color: colors.textMuted }}>/</Text>
+                    <TextInput
+                      value={totalChapters}
+                      onChangeText={setTotalChapters}
+                      placeholder="total"
+                      keyboardType="number-pad"
+                      style={{ flex: 1 }}
+                    />
+                  </View>
                 </>
               ) : null}
 

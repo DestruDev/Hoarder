@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 
@@ -38,10 +39,12 @@ export function MediaCover({
 export function MediaRow({
   title,
   subtitle,
+  rating,
   coverImageUrl,
 }: {
   title: string;
   subtitle: string;
+  rating?: number | null;
   coverImageUrl?: string | null;
 }) {
   return (
@@ -50,6 +53,12 @@ export function MediaRow({
       <View style={{ flex: 1 }}>
         <Text>{title}</Text>
         <Text style={{ color: colors.textMuted }}>{subtitle}</Text>
+        {rating != null ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="star" size={12} color={colors.textMuted} />
+            <Text style={{ color: colors.textMuted }}>{rating}</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );

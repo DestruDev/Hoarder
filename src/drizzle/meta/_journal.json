@@ -57,6 +57,34 @@
       "when": 1789865557002,
       "tag": "0007_pretty_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789874688600,
+      "tag": "0008_salty_shooting_star",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789874782166,
+      "tag": "0009_awesome_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789878716172,
+      "tag": "0010_supreme_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1789879552621,
+      "tag": "0011_aberrant_romulus",
+      "breakpoints": true
     }
   ]
 }

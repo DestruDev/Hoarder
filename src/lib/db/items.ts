@@ -45,7 +45,7 @@ export async function findItemByTitleAndType(
 }
 
 export async function addCatalogItemToLibrary(
-  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes'>,
+  catalogItem: Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes' | 'totalPages' | 'totalChapters'>,
   status: ItemStatus,
 ): Promise<Item> {
   const existing = await findItemByTitleAndType(catalogItem.title, catalogItem.mediaType);
@@ -61,8 +61,14 @@ export async function addCatalogItemToLibrary(
     notes: null,
     coverImageUrl: catalogItem.coverImageUrl,
     releaseStatus: catalogItem.releaseStatus ?? null,
-    mangaOrigin: catalogItem.mangaOrigin ?? null,
+    mangaOrigin: catalogItem.mediaType === 'comic' ? catalogItem.mangaOrigin ?? 'american' : catalogItem.mangaOrigin ?? null,
     totalEpisodes: catalogItem.totalEpisodes ?? null,
+    totalPages: catalogItem.totalPages ?? null,
+    totalChapters: catalogItem.totalChapters ?? null,
+    currentEpisodes: null,
+    currentPages: null,
+    currentChapters: null,
+    finishDate: null,
   });
 }
 

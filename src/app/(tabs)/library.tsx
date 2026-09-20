@@ -10,7 +10,7 @@ import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { getItems, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-import { episodeCountLabel, STATUS_LABELS } from '@/lib/status-labels';
+import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
   const { query } = useMediaSearch();
@@ -115,7 +115,16 @@ export default function LibraryScreen() {
                         <Pressable style={{ flex: 1 }}>
                           <MediaRow
                             title={item.title}
-                            subtitle={`${episodeCountLabel(item.mediaType, item.totalEpisodes, item.mangaOrigin)}${item.rating != null ? ` · ${item.rating}` : ''}`}
+                            subtitle={libraryCountLabel(item.mediaType, {
+                              mangaOrigin: item.mangaOrigin,
+                              currentEpisodes: item.currentEpisodes,
+                              totalEpisodes: item.totalEpisodes,
+                              currentPages: item.currentPages,
+                              totalPages: item.totalPages,
+                              currentChapters: item.currentChapters,
+                              totalChapters: item.totalChapters,
+                            })}
+                            rating={item.rating}
                             coverImageUrl={item.coverImageUrl}
                           />
                         </Pressable>

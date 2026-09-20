@@ -21,6 +21,8 @@ export default function ItemDetailScreen() {
   const [releaseStatus, setReleaseStatus] = useState<Item['releaseStatus']>(null);
   const [mangaOrigin, setMangaOrigin] = useState<Item['mangaOrigin']>(null);
   const [totalEpisodes, setTotalEpisodes] = useState<Item['totalEpisodes']>(null);
+  const [totalPages, setTotalPages] = useState<Item['totalPages']>(null);
+  const [totalChapters, setTotalChapters] = useState<Item['totalChapters']>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,9 +47,11 @@ export default function ItemDetailScreen() {
             const catalogItem = await findCatalogItemByTitleAndType(row.title, row.mediaType);
             if (!cancelled) {
               setCoverImageUrl(row.coverImageUrl ?? catalogItem?.coverImageUrl ?? null);
-              setReleaseStatus(row.releaseStatus ?? catalogItem?.releaseStatus ?? null);
+              setReleaseStatus(catalogItem?.releaseStatus ?? row.releaseStatus ?? null);
               setMangaOrigin(row.mangaOrigin ?? catalogItem?.mangaOrigin ?? null);
-              setTotalEpisodes(row.totalEpisodes ?? catalogItem?.totalEpisodes ?? null);
+              setTotalEpisodes(catalogItem?.totalEpisodes ?? row.totalEpisodes ?? null);
+              setTotalPages(row.totalPages ?? catalogItem?.totalPages ?? null);
+              setTotalChapters(row.totalChapters ?? catalogItem?.totalChapters ?? null);
             }
           }
         })
@@ -104,15 +108,17 @@ export default function ItemDetailScreen() {
         releaseStatus,
         mangaOrigin,
         totalEpisodes,
+        totalPages,
+        totalChapters,
       }}
       libraryItem={item}
       onLibraryItemChange={(next) => {
         setItem(next);
         if (next) {
           setCoverImageUrl(next.coverImageUrl ?? coverImageUrl);
-          setReleaseStatus(next.releaseStatus ?? releaseStatus);
           setMangaOrigin(next.mangaOrigin ?? mangaOrigin);
-          setTotalEpisodes(next.totalEpisodes);
+          setTotalPages(next.totalPages);
+          setTotalChapters(next.totalChapters);
         }
       }}
       onRemoved={() => router.back()}
