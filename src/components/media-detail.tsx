@@ -5,7 +5,7 @@ import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
-import { mediaTypeLabel, progressValueLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
+import { formatScore, mediaTypeLabel, progressValueLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
 
 export type MediaDetails = Pick<
   CatalogItem,
@@ -75,7 +75,7 @@ export function MediaDetail({
       {isPagedMediaType(media.mediaType, media.mangaOrigin) ? (
         <Text>Pages: {pageProgress ?? '—'}</Text>
       ) : null}
-      <Text>Rating: {libraryItem?.rating ?? '—'}</Text>
+      <Text>Rating: {libraryItem?.rating != null ? formatScore(libraryItem.rating) : '—'}</Text>
       <LibraryStatusControl
         media={media}
         libraryItem={libraryItem}

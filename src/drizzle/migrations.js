@@ -13,6 +13,7 @@ import m0008 from './0008_salty_shooting_star.sql';
 import m0009 from './0009_awesome_rockslide.sql';
 import m0010 from './0010_supreme_jack_power.sql';
 import m0011 from './0011_aberrant_romulus.sql';
+import m0012 from './0012_great_trish_tilby.sql';
 
   export default {
     journal,
@@ -28,7 +29,8 @@ m0007,
 m0008,
 m0009,
 m0010,
-m0011
+m0011,
+m0012
     }
   }
   

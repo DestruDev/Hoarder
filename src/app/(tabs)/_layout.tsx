@@ -14,9 +14,9 @@ export default function TabLayout() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    const onHomeOrProfile = pathname === '/' || pathname === '/profile';
+    const onFeedOrProfile = pathname === '/' || pathname === '/profile';
 
-    if (onHomeOrProfile && isSearching) {
+    if (onFeedOrProfile && isSearching) {
       setIsSearching(false);
       setQuery('');
     }
@@ -57,9 +57,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
+            title: 'Feed',
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+              <Ionicons name={focused ? 'newspaper' : 'newspaper-outline'} size={size} color={color} />
             ),
           }}
         />

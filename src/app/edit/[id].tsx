@@ -18,9 +18,8 @@ import {
   type Item,
   type ItemStatus,
 } from '@/lib/db';
+import { ScorePicker } from '@/components/score-picker';
 import { COMIC_ORIGIN_LABELS, STATUS_LABELS } from '@/lib/status-labels';
-
-const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function toDateInput(value?: string | null): string {
   if (!value) {
@@ -427,29 +426,7 @@ export default function ItemEditScreen() {
             ) : null}
 
             <Text style={{ color: colors.textMuted, marginTop: 6 }}>Score</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {SCORES.map((value) => {
-                const isSelected = score === value;
-
-                return (
-                  <Pressable
-                    key={value}
-                    onPress={() => setScore(isSelected ? null : value)}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
-                      borderColor: isSelected ? colors.text : colors.border,
-                      borderWidth: 1,
-                      borderRadius: 10,
-                    }}>
-                    <Text>{value}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ScorePicker value={score} onChange={setScore} />
 
             <Text style={{ color: colors.textMuted, marginTop: 6 }}>Notes</Text>
             <TextInput

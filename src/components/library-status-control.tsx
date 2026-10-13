@@ -16,9 +16,8 @@ import {
   type Item,
   type ItemStatus,
 } from '@/lib/db';
-import { STATUS_LABELS } from '@/lib/status-labels';
-
-const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+import { ScorePicker } from '@/components/score-picker';
+import { formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
 
 type QuickEdit = 'status' | 'progress' | 'score';
 
@@ -245,7 +244,7 @@ export function LibraryStatusControl({
       : libraryItem.status === 'completed' && (totalProgress ?? currentProgress) != null
         ? `${totalProgress ?? currentProgress}/${totalProgress ?? currentProgress} ${unit}`
         : `${currentProgress ?? '-'}/${totalProgress ?? '-'} ${unit}`;
-  const scoreLabel = libraryItem?.rating != null ? `${libraryItem.rating}/10` : 'UNSCORED';
+  const scoreLabel = libraryItem?.rating != null ? formatScoreOutOfTen(libraryItem.rating) : 'UNSCORED';
 
   return (
     <>
@@ -330,29 +329,7 @@ export function LibraryStatusControl({
             ) : null}
 
             {open === 'score' ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {SCORES.map((value) => {
-                  const isSelected = selectedScore === value;
-
-                  return (
-                    <Pressable
-                      key={value}
-                      onPress={() => setSelectedScore(isSelected ? null : value)}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
-                        borderColor: isSelected ? colors.text : colors.border,
-                        borderWidth: 1,
-                        borderRadius: 10,
-                      }}>
-                      <Text>{value}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <ScorePicker value={selectedScore} onChange={setSelectedScore} />
             ) : null}
 
             {error ? <Text>{error}</Text> : null}

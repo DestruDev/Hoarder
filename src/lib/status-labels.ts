@@ -160,3 +160,12 @@ export function libraryCountLabel(
 
   return mediaTypeLabel(mediaType, mangaOrigin);
 }
+
+export function formatScore(rating: number): string {
+  const rounded = Math.round(rating * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+export function formatScoreOutOfTen(rating: number): string {
+  return `${formatScore(rating)}/10`;
+}

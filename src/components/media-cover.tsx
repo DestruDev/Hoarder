@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
+import { formatScore } from '@/lib/status-labels';
 
 const PLACEHOLDER_COVER = require('../../assets/images/cover-placeholder.png');
 
@@ -56,7 +57,7 @@ export function MediaRow({
         {rating != null ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="star" size={12} color={colors.textMuted} />
-            <Text style={{ color: colors.textMuted }}>{rating}</Text>
+            <Text style={{ color: colors.textMuted }}>{formatScore(rating)}</Text>
           </View>
         ) : null}
       </View>
