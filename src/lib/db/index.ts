@@ -5,7 +5,16 @@ export {
   seedCatalogIfEmpty,
 } from './catalog-seed';
 export { SAMPLE_CATALOG } from './catalog-data';
-export { findCatalogItemByTitleAndType, getCatalogItemById, getCatalogItems } from './catalog-store';
+export { resetAndSeedFeed, seedFeedIfEmpty, seedFeedNotifications } from './feed-seed';
+export { getFeedNotifications } from './feed-store';
+export {
+  findCatalogItemByTitleAndType,
+  getCatalogItemById,
+  getCatalogItems,
+  insertCatalogItems,
+  pruneCoverlessCatalogItems,
+  upsertCatalogItems,
+} from './catalog-store';
 export {
   addCatalogItemToLibrary,
   createItem,
@@ -16,12 +25,14 @@ export {
   updateItem,
 } from './items';
 export { getProfile, saveProfile } from './profile-store';
-export { resetAndSeed, SAMPLE_ITEMS, seedIfEmpty, seedItems } from './seed';
-export { catalog, items, profile } from './schema';
-export { COMIC_ORIGINS, ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
+export { resetAndSeed, sampleItemsFromCatalog, seedIfEmpty, seedItems } from './seed';
+export { catalog, feedNotifications, items, profile } from './schema';
+export { COMIC_ORIGINS, FEED_KINDS, ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
 export type {
   CatalogItem,
   ComicOrigin,
+  FeedKind,
+  FeedNotification,
   Item,
   ItemFilters,
   ItemStatus,

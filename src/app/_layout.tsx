@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { Screen, Text } from '@/components/themed';
 import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
-import { db, seedCatalogIfEmpty } from '@/lib/db';
+import { db, seedCatalogIfEmpty, seedFeedIfEmpty } from '@/lib/db';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,6 +26,7 @@ export default function RootLayout() {
     }
 
     seedCatalogIfEmpty()
+      .then(() => seedFeedIfEmpty())
       .catch((seedError) => {
         console.error('[Hoarder DB] Catalog seed failed:', seedError);
       })

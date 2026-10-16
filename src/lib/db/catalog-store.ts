@@ -1,8 +1,30 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { db } from './client';
 import { catalog } from './schema';
-import type { CatalogItem, MediaType } from './types';
+import type { CatalogItem, MediaType, NewCatalogItem } from './types';
+
+function catalogKey(item: Pick<CatalogItem, 'title' | 'mediaType'>): string {
+  return `${item.mediaType}:${item.title.trim().toLowerCase()}`;
+}
+
+const INSERT_CHUNK_SIZE = 40;
+
+export async function insertCatalogItems(entries: NewCatalogItem[]): Promise<CatalogItem[]> {
+  if (entries.length === 0) {
+    return [];
+  }
+
+  const saved: CatalogItem[] = [];
+
+  for (let index = 0; index < entries.length; index += INSERT_CHUNK_SIZE) {
+    const chunk = entries.slice(index, index + INSERT_CHUNK_SIZE);
+    const inserted = await db.insert(catalog).values(chunk).returning();
+    saved.push(...inserted);
+  }
+
+  return saved;
+}
 
 export async function getCatalogItems(mediaType?: MediaType): Promise<CatalogItem[]> {
   if (mediaType) {
@@ -17,6 +39,10 @@ export async function getCatalogItemById(id: number): Promise<CatalogItem | unde
   return item;
 }
 
+export async function updateCatalogCover(id: number, coverImageUrl: string): Promise<void> {
+  await db.update(catalog).set({ coverImageUrl }).where(eq(catalog.id, id));
+}
+
 export async function findCatalogItemByTitleAndType(
   title: string,
   mediaType: MediaType,
@@ -28,4 +54,83 @@ export async function findCatalogItemByTitleAndType(
     .limit(1);
 
   return item;
+}
+
+export async function upsertCatalogItems(entries: NewCatalogItem[]): Promise<CatalogItem[]> {
+  const existing = await getCatalogItems();
+  const byKey = new Map(existing.map((item) => [catalogKey(item), item]));
+  const toInsert: NewCatalogItem[] = [];
+
+  for (const entry of entries) {
+    const found = byKey.get(catalogKey(entry));
+    if (!found) {
+      toInsert.push(entry);
+      continue;
+    }
+
+    const coverImageUrl = entry.coverImageUrl ?? found.coverImageUrl;
+    const releaseStatus = entry.releaseStatus ?? found.releaseStatus;
+    const mangaOrigin = entry.mangaOrigin ?? found.mangaOrigin;
+    const totalEpisodes = entry.totalEpisodes ?? found.totalEpisodes;
+    const totalPages = entry.totalPages ?? found.totalPages;
+    const totalChapters = entry.totalChapters ?? found.totalChapters;
+
+    if (
+      coverImageUrl === found.coverImageUrl &&
+      releaseStatus === found.releaseStatus &&
+      mangaOrigin === found.mangaOrigin &&
+      totalEpisodes === found.totalEpisodes &&
+      totalPages === found.totalPages &&
+      totalChapters === found.totalChapters
+    ) {
+      continue;
+    }
+
+    await db
+      .update(catalog)
+      .set({
+        coverImageUrl,
+        releaseStatus,
+        mangaOrigin,
+        totalEpisodes,
+        totalPages,
+        totalChapters,
+      })
+      .where(eq(catalog.id, found.id));
+  }
+
+  await insertCatalogItems(toInsert);
+  return getCatalogItems();
+}
+
+export async function pruneCoverlessCatalogItems(): Promise<void> {
+  const existing = await getCatalogItems();
+  const groups = new Map<string, CatalogItem[]>();
+
+  for (const item of existing) {
+    const key =
+      item.mediaType === 'comic' ? `comic:${item.mangaOrigin ?? 'american'}` : item.mediaType;
+    const rows = groups.get(key) ?? [];
+    rows.push(item);
+    groups.set(key, rows);
+  }
+
+  const ids: number[] = [];
+  for (const rows of groups.values()) {
+    if (!rows.some((row) => row.coverImageUrl)) {
+      continue;
+    }
+
+    for (const row of rows) {
+      if (!row.coverImageUrl) {
+        ids.push(row.id);
+      }
+    }
+  }
+
+  if (ids.length === 0) {
+    return;
+  }
+
+  await db.delete(catalog).where(inArray(catalog.id, ids));
 }

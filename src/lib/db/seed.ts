@@ -1,196 +1,265 @@
+import { seedCatalogIfEmpty } from './catalog-seed';
 import { db, sqlite } from './client';
+import { getCatalogItems } from './catalog-store';
 import { getItems } from './items';
 import { items } from './schema';
-import type { Item, NewItemInput } from './types';
+import {
+  isChapteredMediaType,
+  isPagedMediaType,
+  isShowMediaType,
+  type CatalogItem,
+  type ComicOrigin,
+  type Item,
+  type ItemStatus,
+  type MediaType,
+  type NewItemInput,
+} from './types';
 
-type SampleItem = NewItemInput & { dateAdded: string };
+type SamplePlan = {
+  mediaType: MediaType;
+  origin?: ComicOrigin;
+  status: ItemStatus;
+  rating: number | null;
+  notes: string | null;
+  progressRatio: number | null;
+  daysAgo: number;
+};
 
-export const SAMPLE_ITEMS: SampleItem[] = [
+const SAMPLE_PLANS: SamplePlan[] = [
   {
-    title: 'The Hobbit',
     mediaType: 'book',
     status: 'completed',
     rating: 9,
     notes: 'Comfort reread. Still holds up.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: 310,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: 310,
-    currentChapters: null,
-    dateAdded: '2024-11-02T18:20:00.000Z',
-    finishDate: '2024-11-18T18:20:00.000Z',
+    progressRatio: 1,
+    daysAgo: 340,
   },
   {
-    title: 'Project Hail Mary',
     mediaType: 'book',
     status: 'in_progress',
-    rating: 8,
-    notes: 'Halfway through. Rocky is the best.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: 496,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: 248,
-    currentChapters: null,
-    dateAdded: '2025-03-14T12:00:00.000Z',
-    finishDate: null,
+    rating: 8.2,
+    notes: 'Halfway through and already plotting a reread.',
+    progressRatio: 0.5,
+    daysAgo: 48,
   },
   {
-    title: 'Spirited Away',
     mediaType: 'movie',
     status: 'completed',
     rating: 10,
     notes: null,
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2024-08-21T21:15:00.000Z',
-    finishDate: '2024-08-21T21:15:00.000Z',
+    progressRatio: 1,
+    daysAgo: 410,
   },
   {
-    title: 'Dune: Part Two',
     mediaType: 'movie',
     status: 'planning',
     rating: null,
-    notes: 'Want to rewatch Part One first.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2026-01-09T16:40:00.000Z',
-    finishDate: null,
+    notes: 'Saving this for a weekend watch.',
+    progressRatio: null,
+    daysAgo: 22,
   },
   {
-    title: 'The Bear',
     mediaType: 'tv',
     status: 'in_progress',
-    rating: 8,
-    notes: 'On season 3.',
-    coverImageUrl: null,
-    releaseStatus: 'releasing',
-    mangaOrigin: null,
-    totalEpisodes: 38,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: 20,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2025-06-02T19:05:00.000Z',
-    finishDate: null,
+    rating: 8.4,
+    notes: 'On a mid-season stretch.',
+    progressRatio: 0.55,
+    daysAgo: 120,
   },
   {
-    title: 'Andor',
     mediaType: 'tv',
     status: 'planning',
     rating: null,
     notes: null,
-    coverImageUrl: null,
-    releaseStatus: 'released',
-    mangaOrigin: null,
-    totalEpisodes: 24,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2026-04-18T10:30:00.000Z',
-    finishDate: null,
+    progressRatio: null,
+    daysAgo: 16,
   },
   {
-    title: "Frieren: Beyond Journey's End",
     mediaType: 'anime',
     status: 'in_progress',
-    rating: 10,
-    notes: 'Caught up. Waiting on the next cour.',
-    coverImageUrl: null,
-    releaseStatus: 'releasing',
-    mangaOrigin: null,
-    totalEpisodes: 28,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: 20,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2025-01-22T08:00:00.000Z',
-    finishDate: null,
+    rating: 9.1,
+    notes: 'Caught up. Waiting on the next drop.',
+    progressRatio: 0.7,
+    daysAgo: 200,
   },
   {
-    title: 'Fullmetal Alchemist',
+    mediaType: 'anime',
+    status: 'completed',
+    rating: 8.7,
+    notes: null,
+    progressRatio: 1,
+    daysAgo: 520,
+  },
+  {
     mediaType: 'comic',
+    origin: 'japanese',
     status: 'completed',
     rating: 10,
-    notes: 'Read the manga after finishing the show.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: 'japanese',
-    totalEpisodes: null,
-    totalPages: null,
-    totalChapters: 116,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: 116,
-    dateAdded: '2023-12-11T14:55:00.000Z',
-    finishDate: '2024-02-01T14:55:00.000Z',
+    notes: 'Finished the whole run.',
+    progressRatio: 1,
+    daysAgo: 600,
   },
   {
-    title: 'Elden Ring',
-    mediaType: 'game',
+    mediaType: 'comic',
+    origin: 'south_korean',
+    status: 'in_progress',
+    rating: 8.6,
+    notes: 'Binging a few chapters at a time.',
+    progressRatio: 0.4,
+    daysAgo: 70,
+  },
+  {
+    mediaType: 'comic',
+    origin: 'american',
     status: 'planning',
     rating: null,
-    notes: 'Next after Hades.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2026-02-01T15:00:00.000Z',
-    finishDate: null,
+    notes: 'Picked this up from Explore.',
+    progressRatio: null,
+    daysAgo: 9,
   },
   {
-    title: 'Hades',
     mediaType: 'game',
     status: 'on_hold',
     rating: null,
-    notes: 'Escaped once. Still have heat 8 runs to do.',
-    coverImageUrl: null,
-    releaseStatus: null,
-    mangaOrigin: null,
-    totalEpisodes: null,
-    totalPages: null,
-    totalChapters: null,
-    currentEpisodes: null,
-    currentPages: null,
-    currentChapters: null,
-    dateAdded: '2024-05-30T01:12:00.000Z',
-    finishDate: null,
+    notes: 'One more run later. Need a break.',
+    progressRatio: null,
+    daysAgo: 280,
+  },
+  {
+    mediaType: 'game',
+    status: 'planning',
+    rating: null,
+    notes: 'Next after the current backlog.',
+    progressRatio: null,
+    daysAgo: 35,
+  },
+  {
+    mediaType: 'tv',
+    status: 'dropped',
+    rating: 5.5,
+    notes: 'Lost the thread after a few episodes.',
+    progressRatio: 0.15,
+    daysAgo: 90,
+  },
+  {
+    mediaType: 'book',
+    status: 'revisiting',
+    rating: 8.8,
+    notes: 'Back for another pass.',
+    progressRatio: 0.25,
+    daysAgo: 12,
   },
 ];
 
+function daysAgoIso(daysAgo: number, finished: boolean): { dateAdded: string; finishDate: string | null } {
+  const added = new Date();
+  added.setUTCDate(added.getUTCDate() - daysAgo);
+  const dateAdded = added.toISOString();
+
+  if (!finished) {
+    return { dateAdded, finishDate: null };
+  }
+
+  const finishedAt = new Date(added);
+  finishedAt.setUTCDate(finishedAt.getUTCDate() + Math.min(14, Math.max(1, Math.floor(daysAgo / 8))));
+  return { dateAdded, finishDate: finishedAt.toISOString() };
+}
+
+function scaledTotal(total: number | null, ratio: number | null, completed: boolean): number | null {
+  if (total == null) {
+    return null;
+  }
+
+  if (completed) {
+    return total;
+  }
+
+  if (ratio == null) {
+    return null;
+  }
+
+  return Math.max(1, Math.min(total, Math.round(total * ratio)));
+}
+
+function catalogMatches(item: CatalogItem, mediaType: MediaType, origin?: ComicOrigin): boolean {
+  if (item.mediaType !== mediaType) {
+    return false;
+  }
+
+  if (!origin) {
+    return true;
+  }
+
+  return (item.mangaOrigin ?? 'american') === origin;
+}
+
+function pickCatalogItem(
+  catalog: CatalogItem[],
+  used: Set<number>,
+  mediaType: MediaType,
+  origin?: ComicOrigin,
+): CatalogItem | undefined {
+  const matches = catalog.filter((item) => !used.has(item.id) && catalogMatches(item, mediaType, origin));
+  return matches.find((item) => item.coverImageUrl) ?? matches[0];
+}
+
+function toLibraryItem(catalogItem: CatalogItem, plan: SamplePlan): NewItemInput & { dateAdded: string } {
+  const completed = plan.status === 'completed';
+  const { dateAdded, finishDate } = daysAgoIso(plan.daysAgo, completed);
+  const origin = catalogItem.mangaOrigin ?? plan.origin ?? null;
+
+  return {
+    title: catalogItem.title,
+    mediaType: catalogItem.mediaType,
+    status: plan.status,
+    rating: plan.rating,
+    notes: plan.notes,
+    coverImageUrl: catalogItem.coverImageUrl,
+    releaseStatus: catalogItem.releaseStatus ?? null,
+    mangaOrigin: catalogItem.mediaType === 'comic' ? origin ?? 'american' : origin,
+    totalEpisodes: catalogItem.totalEpisodes ?? null,
+    totalPages: catalogItem.totalPages ?? null,
+    totalChapters: catalogItem.totalChapters ?? null,
+    currentEpisodes: isShowMediaType(catalogItem.mediaType)
+      ? scaledTotal(catalogItem.totalEpisodes, plan.progressRatio, completed)
+      : null,
+    currentPages: isPagedMediaType(catalogItem.mediaType, origin)
+      ? scaledTotal(catalogItem.totalPages, plan.progressRatio, completed)
+      : null,
+    currentChapters: isChapteredMediaType(catalogItem.mediaType, origin)
+      ? scaledTotal(catalogItem.totalChapters, plan.progressRatio, completed)
+      : null,
+    dateAdded,
+    finishDate,
+  };
+}
+
+export async function sampleItemsFromCatalog(): Promise<Array<NewItemInput & { dateAdded: string }>> {
+  const catalog = await getCatalogItems();
+  const used = new Set<number>();
+  const seeded: Array<NewItemInput & { dateAdded: string }> = [];
+
+  for (const plan of SAMPLE_PLANS) {
+    const catalogItem = pickCatalogItem(catalog, used, plan.mediaType, plan.origin);
+    if (!catalogItem) {
+      continue;
+    }
+
+    used.add(catalogItem.id);
+    seeded.push(toLibraryItem(catalogItem, plan));
+  }
+
+  return seeded;
+}
+
 export async function seedItems(): Promise<Item[]> {
-  const created = await db.insert(items).values(SAMPLE_ITEMS).returning();
-  return created;
+  await seedCatalogIfEmpty();
+  const sampleItems = await sampleItemsFromCatalog();
+  if (sampleItems.length === 0) {
+    return [];
+  }
+
+  return db.insert(items).values(sampleItems).returning();
 }
 
 export async function seedIfEmpty(): Promise<Item[]> {

@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Text } from '@/components/themed';
@@ -17,6 +18,12 @@ export function MediaCover({
   width?: number;
   height?: number;
 }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [uri]);
+
   return (
     <View
       style={{
@@ -29,9 +36,10 @@ export function MediaCover({
         borderColor: colors.border,
       }}>
       <Image
-        source={uri ? { uri } : PLACEHOLDER_COVER}
+        source={!failed && uri ? { uri } : PLACEHOLDER_COVER}
         style={{ width, height }}
         contentFit="cover"
+        onError={() => setFailed(true)}
       />
     </View>
   );

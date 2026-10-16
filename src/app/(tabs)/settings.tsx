@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { resetAndSeed, resetAndSeedCatalog } from '@/lib/db';
+import { resetAndSeed, resetAndSeedCatalog, resetAndSeedFeed } from '@/lib/db';
 import { matchesSearchText } from '@/lib/media-search';
 
 type SettingItem = {
@@ -29,7 +29,11 @@ export default function SettingsScreen() {
 
     try {
       const seeded = await resetAndSeed();
-      setMessage(`Reset complete. Seeded ${seeded.length} sample items.`);
+      setMessage(
+        seeded.length === 0
+          ? 'No catalog titles to add. Reset & seed the catalog first.'
+          : `Reset complete. Seeded ${seeded.length} library items from the catalog.`,
+      );
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'Failed to reset and seed.');
     } finally {
@@ -47,9 +51,34 @@ export default function SettingsScreen() {
 
     try {
       const seeded = await resetAndSeedCatalog();
-      setMessage(`Catalog reset complete. Seeded ${seeded.length} titles.`);
+      const feed = await resetAndSeedFeed();
+      setMessage(
+        `Catalog snapshot saved with ${seeded.length} titles. Feed seeded ${feed.length} updates from the catalog.`,
+      );
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'Failed to reset catalog.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResetFeed() {
+    if (busy) {
+      return;
+    }
+
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      const seeded = await resetAndSeedFeed();
+      setMessage(
+        seeded.length === 0
+          ? 'No catalog titles to add. Replace the catalog snapshot first.'
+          : `Feed reset complete. Seeded ${seeded.length} updates from the catalog.`,
+      );
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'Failed to reset feed.');
     } finally {
       setBusy(false);
     }
@@ -67,8 +96,15 @@ export default function SettingsScreen() {
         {
           id: 'reset-catalog',
           group: 'Development',
-          title: 'Reset & seed catalog',
+          title: 'Replace catalog snapshot from APIs',
           onPress: handleResetCatalog,
+          disabled: busy,
+        },
+        {
+          id: 'reset-feed',
+          group: 'Development',
+          title: 'Replace & seed feed from catalog',
+          onPress: handleResetFeed,
           disabled: busy,
         },
       ]

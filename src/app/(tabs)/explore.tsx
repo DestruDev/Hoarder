@@ -5,24 +5,9 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { MediaPoster } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { getCatalogItems, type CatalogItem, type ComicOrigin, type MediaType } from '@/lib/db';
+import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
+import { getCatalogItems, type CatalogItem } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
-
-const TRENDING_SECTIONS: {
-  id: string;
-  title: string;
-  types: MediaType[];
-  origin?: ComicOrigin;
-}[] = [
-  { id: 'tv', title: 'Trending TV', types: ['tv'] },
-  { id: 'game', title: 'Trending Games', types: ['game'] },
-  { id: 'anime', title: 'Trending Anime', types: ['anime'] },
-  { id: 'manga', title: 'Trending Manga', types: ['comic'], origin: 'japanese' },
-  { id: 'manhwa', title: 'Trending Manhwa', types: ['comic'], origin: 'south_korean' },
-  { id: 'manhua', title: 'Trending Manhua', types: ['comic'], origin: 'chinese' },
-  { id: 'comic', title: 'Trending Comic', types: ['comic'], origin: 'american' },
-  { id: 'book', title: 'Trending Books', types: ['book'] },
-];
 
 export default function ExploreScreen() {
   const { query } = useMediaSearch();
@@ -53,7 +38,7 @@ export default function ExploreScreen() {
   );
 
   const visibleItems = items.filter((item) => matchesMediaName(item.title, query));
-  const sections = TRENDING_SECTIONS.map((section) => ({
+  const sections = CATALOG_SECTIONS.map((section) => ({
     ...section,
     items: visibleItems.filter((item) => {
       if (!section.types.includes(item.mediaType)) {
@@ -65,7 +50,7 @@ export default function ExploreScreen() {
       }
 
       return (item.mangaOrigin ?? 'american') === section.origin;
-    }),
+    }).slice(0, CATALOG_SECTION_LIMIT),
   })).filter((section) => section.items.length > 0);
 
   return (

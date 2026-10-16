@@ -119,3 +119,20 @@ export type NewCatalogItem = Omit<
   totalPages?: number | null;
   totalChapters?: number | null;
 };
+
+export const FEED_KINDS = ['media', 'friend'] as const;
+
+export type FeedKind = (typeof FEED_KINDS)[number];
+
+export type FeedNotification = {
+  id: number;
+  title: string;
+  body: string;
+  mediaTitle: string;
+  mediaType: MediaType;
+  kind: FeedKind;
+  occurredAt: string;
+  catalogId: number;
+};
+
+export type NewFeedNotification = Omit<FeedNotification, 'id'>;
