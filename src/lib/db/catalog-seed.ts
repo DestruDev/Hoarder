@@ -1,8 +1,9 @@
-import { buildCatalogEntries } from '@/lib/catalog-sources';
+import { buildCatalogEntries, CATALOG_REMOTE_SOURCE_COUNT } from '@/lib/catalog-sources';
 
 import { SAMPLE_CATALOG } from './catalog-data';
 import { getCatalogItems, insertCatalogItems } from './catalog-store';
 import { db, sqlite } from './client';
+import { reportSeedProgress, type OnSeedProgress } from './progress';
 import { catalog } from './schema';
 import type { CatalogItem } from './types';
 
@@ -35,28 +36,39 @@ function runCatalogWrite<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function replaceCatalogFromSources(): Promise<CatalogItem[]> {
-  const entries = await buildCatalogEntries();
+async function replaceCatalogFromSources(
+  onProgress?: OnSeedProgress,
+  extraSteps = 0,
+): Promise<CatalogItem[]> {
+  const saveSteps = 1;
+  const total = CATALOG_REMOTE_SOURCE_COUNT + saveSteps + extraSteps;
+  const entries = await buildCatalogEntries(onProgress, saveSteps + extraSteps);
   const next = entries.length > 0 ? entries : SAMPLE_CATALOG;
+  reportSeedProgress(onProgress, 'Saving catalog…', CATALOG_REMOTE_SOURCE_COUNT, total);
   await clearCatalog();
-  return insertCatalogItems(next);
+  const saved = await insertCatalogItems(next);
+  reportSeedProgress(onProgress, 'Catalog saved', CATALOG_REMOTE_SOURCE_COUNT + saveSteps, total);
+  return saved;
 }
 
 export async function seedCatalog(): Promise<CatalogItem[]> {
-  return runCatalogWrite(replaceCatalogFromSources);
+  return runCatalogWrite(() => replaceCatalogFromSources());
 }
 
-export async function seedCatalogIfEmpty(): Promise<CatalogItem[]> {
+export async function seedCatalogIfEmpty(onProgress?: OnSeedProgress): Promise<CatalogItem[]> {
   return runCatalogWrite(async () => {
     const existing = await getCatalogItems();
     if (!catalogNeedsHydration(existing)) {
       return existing;
     }
 
-    return replaceCatalogFromSources();
+    return replaceCatalogFromSources(onProgress);
   });
 }
 
-export async function resetAndSeedCatalog(): Promise<CatalogItem[]> {
-  return runCatalogWrite(replaceCatalogFromSources);
+export async function resetAndSeedCatalog(
+  onProgress?: OnSeedProgress,
+  extraSteps = 0,
+): Promise<CatalogItem[]> {
+  return runCatalogWrite(() => replaceCatalogFromSources(onProgress, extraSteps));
 }

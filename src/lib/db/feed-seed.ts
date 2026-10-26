@@ -1,3 +1,4 @@
+import { CATALOG_REMOTE_SOURCE_COUNT } from '@/lib/catalog-sources';
 import { lookupItunesMovieCover } from '@/lib/catalog-sources/itunes';
 import { mapInBatches } from '@/lib/catalog-sources/http';
 
@@ -5,6 +6,7 @@ import { seedCatalogIfEmpty } from './catalog-seed';
 import { getCatalogItems, updateCatalogCover } from './catalog-store';
 import { sqlite } from './client';
 import { clearFeedNotifications, getFeedNotifications, insertFeedNotifications } from './feed-store';
+import { reportSeedProgress, type OnSeedProgress } from './progress';
 import {
   isChapteredMediaType,
   type CatalogItem,
@@ -150,14 +152,22 @@ function pickCatalogItem(
   );
 }
 
-async function fillMissingMovieCovers(): Promise<void> {
+async function fillMissingMovieCovers(onProgress?: OnSeedProgress): Promise<void> {
   const movies = (await getCatalogItems('movie')).filter((item) => !item.coverImageUrl);
   if (movies.length === 0) {
     return;
   }
 
+  let completed = 0;
   await mapInBatches(movies, 3, async (movie) => {
     const coverImageUrl = await lookupItunesMovieCover(movie.title);
+    completed += 1;
+    reportSeedProgress(
+      onProgress,
+      `Filling movie covers… (${completed}/${movies.length})`,
+      completed,
+      movies.length,
+    );
     if (!coverImageUrl) {
       return null;
     }
@@ -207,15 +217,37 @@ export async function sampleFeedFromCatalog(): Promise<NewFeedNotification[]> {
   return seeded;
 }
 
-export async function seedFeedNotifications(): Promise<FeedNotification[]> {
-  await seedCatalogIfEmpty();
-  await fillMissingMovieCovers();
+export async function seedFeedNotifications(onProgress?: OnSeedProgress): Promise<FeedNotification[]> {
+  const remainingSteps = 2;
+  let hydratedCatalog = false;
+
+  reportSeedProgress(onProgress, 'Checking catalog…', 0, remainingSteps);
+  await seedCatalogIfEmpty((progress) => {
+    hydratedCatalog = true;
+    onProgress?.({
+      ...progress,
+      total: progress.total + remainingSteps,
+    });
+  });
+
+  const offset = hydratedCatalog ? CATALOG_REMOTE_SOURCE_COUNT + 1 : 0;
+  const total = offset + remainingSteps;
+
+  reportSeedProgress(onProgress, 'Filling movie covers…', offset, total);
+  await fillMissingMovieCovers((progress) => {
+    reportSeedProgress(onProgress, progress.label, offset, total);
+  });
+
+  reportSeedProgress(onProgress, 'Saving feed…', offset + 1, total);
   const entries = await sampleFeedFromCatalog();
   if (entries.length === 0) {
+    reportSeedProgress(onProgress, 'Feed saved', total, total);
     return [];
   }
 
-  return insertFeedNotifications(entries);
+  const seeded = await insertFeedNotifications(entries);
+  reportSeedProgress(onProgress, 'Feed saved', total, total);
+  return seeded;
 }
 
 export async function seedFeedIfEmpty(): Promise<FeedNotification[]> {
@@ -234,7 +266,7 @@ export async function seedFeedIfEmpty(): Promise<FeedNotification[]> {
   return resetAndSeedFeed();
 }
 
-export async function resetAndSeedFeed(): Promise<FeedNotification[]> {
+export async function resetAndSeedFeed(onProgress?: OnSeedProgress): Promise<FeedNotification[]> {
   await clearFeedNotifications();
 
   try {
@@ -243,5 +275,5 @@ export async function resetAndSeedFeed(): Promise<FeedNotification[]> {
     // sqlite_sequence is created after the first insert; ignore if missing.
   }
 
-  return seedFeedNotifications();
+  return seedFeedNotifications(onProgress);
 }

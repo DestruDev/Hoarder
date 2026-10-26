@@ -4,6 +4,7 @@ export {
   seedCatalog,
   seedCatalogIfEmpty,
 } from './catalog-seed';
+export type { OnSeedProgress, SeedProgress } from './progress';
 export { SAMPLE_CATALOG } from './catalog-data';
 export { resetAndSeedFeed, seedFeedIfEmpty, seedFeedNotifications } from './feed-seed';
 export { getFeedNotifications, toggleFeedLike } from './feed-store';

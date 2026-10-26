@@ -166,7 +166,7 @@ export default function FeedScreen() {
         {notifications.length === 0 ? (
           <Text style={{ paddingVertical: 12 }}>
             {feedItems.length === 0
-              ? 'No updates yet. Replace & seed the feed from Settings.'
+              ? 'No updates yet. Replace & seed the feed from Settings → Debug.'
               : 'No matching updates.'}
           </Text>
         ) : (

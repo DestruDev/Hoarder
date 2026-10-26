@@ -1,5 +1,8 @@
+import { CATALOG_REMOTE_SOURCE_COUNT } from '@/lib/catalog-sources';
+
 import { seedCatalogIfEmpty } from './catalog-seed';
 import { db, sqlite } from './client';
+import { reportSeedProgress, type OnSeedProgress } from './progress';
 import { getCatalogItems } from './catalog-store';
 import { getItems } from './items';
 import { items } from './schema';
@@ -252,14 +255,31 @@ export async function sampleItemsFromCatalog(): Promise<Array<NewItemInput & { d
   return seeded;
 }
 
-export async function seedItems(): Promise<Item[]> {
-  await seedCatalogIfEmpty();
+export async function seedItems(onProgress?: OnSeedProgress): Promise<Item[]> {
+  const remainingSteps = 1;
+  let hydratedCatalog = false;
+
+  reportSeedProgress(onProgress, 'Checking catalog…', 0, remainingSteps);
+  await seedCatalogIfEmpty((progress) => {
+    hydratedCatalog = true;
+    onProgress?.({
+      ...progress,
+      total: progress.total + remainingSteps,
+    });
+  });
+
+  const offset = hydratedCatalog ? CATALOG_REMOTE_SOURCE_COUNT + 1 : 0;
+  const total = offset + remainingSteps;
+  reportSeedProgress(onProgress, 'Seeding library…', offset, total);
   const sampleItems = await sampleItemsFromCatalog();
   if (sampleItems.length === 0) {
+    reportSeedProgress(onProgress, 'Library seeded', total, total);
     return [];
   }
 
-  return db.insert(items).values(sampleItems).returning();
+  const seeded = await db.insert(items).values(sampleItems).returning();
+  reportSeedProgress(onProgress, 'Library seeded', total, total);
+  return seeded;
 }
 
 export async function seedIfEmpty(): Promise<Item[]> {
@@ -271,7 +291,7 @@ export async function seedIfEmpty(): Promise<Item[]> {
   return seedItems();
 }
 
-export async function resetAndSeed(): Promise<Item[]> {
+export async function resetAndSeed(onProgress?: OnSeedProgress): Promise<Item[]> {
   await db.delete(items);
 
   try {
@@ -280,5 +300,5 @@ export async function resetAndSeed(): Promise<Item[]> {
     // sqlite_sequence is created after the first insert; ignore if missing.
   }
 
-  return seedItems();
+  return seedItems(onProgress);
 }

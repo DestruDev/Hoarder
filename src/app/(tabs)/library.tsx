@@ -64,7 +64,7 @@ export default function LibraryScreen() {
       {error ? <Text>{error}</Text> : null}
 
       {items.length === 0 ? (
-        <Text>No items yet. Seed sample data from Settings, or add your own.</Text>
+        <Text>No items yet. Seed sample data from Settings → Debug, or add your own.</Text>
       ) : visibleItems.length === 0 ? (
         <Text>No matching titles.</Text>
       ) : (

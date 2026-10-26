@@ -1,4 +1,5 @@
 import { SAMPLE_CATALOG } from '@/lib/db/catalog-data';
+import { reportSeedProgress, type OnSeedProgress } from '@/lib/db/progress';
 import type { MediaType, NewCatalogItem } from '@/lib/db/types';
 
 import { limitCatalogBySection } from '@/lib/catalog-sections';
@@ -78,18 +79,25 @@ function sampleFallback(remote: NewCatalogItem[]): NewCatalogItem[] {
   });
 }
 
-export async function fetchRemoteCatalog(): Promise<NewCatalogItem[]> {
-  const sources: { name: string; fetch: () => Promise<NewCatalogItem[]> }[] = [
-    { name: 'AniList', fetch: fetchAnilistCatalog },
-    { name: 'TMDB', fetch: fetchTmdbCatalog },
-    { name: 'TVMaze', fetch: fetchTvmazeCatalog },
-    { name: 'iTunes', fetch: fetchItunesCatalog },
-    { name: 'Steam', fetch: fetchSteamCatalog },
-  ];
+const CATALOG_REMOTE_SOURCES = [
+  { name: 'AniList', fetch: fetchAnilistCatalog },
+  { name: 'TMDB', fetch: fetchTmdbCatalog },
+  { name: 'TVMaze', fetch: fetchTvmazeCatalog },
+  { name: 'iTunes', fetch: fetchItunesCatalog },
+  { name: 'Steam', fetch: fetchSteamCatalog },
+] as const;
 
+export const CATALOG_REMOTE_SOURCE_COUNT = CATALOG_REMOTE_SOURCES.length;
+
+export async function fetchRemoteCatalog(
+  onProgress?: OnSeedProgress,
+  extraSteps = 0,
+): Promise<NewCatalogItem[]> {
+  const total = CATALOG_REMOTE_SOURCES.length + extraSteps;
   const remote: NewCatalogItem[] = [];
 
-  for (const source of sources) {
+  for (const [index, source] of CATALOG_REMOTE_SOURCES.entries()) {
+    reportSeedProgress(onProgress, `Fetching ${source.name}…`, index, total);
     try {
       remote.push(...(await source.fetch()));
     } catch (reason) {
@@ -100,7 +108,10 @@ export async function fetchRemoteCatalog(): Promise<NewCatalogItem[]> {
   return dedupeCatalogItems(remote);
 }
 
-export async function buildCatalogEntries(): Promise<NewCatalogItem[]> {
-  const remote = await fetchRemoteCatalog();
+export async function buildCatalogEntries(
+  onProgress?: OnSeedProgress,
+  extraSteps = 0,
+): Promise<NewCatalogItem[]> {
+  const remote = await fetchRemoteCatalog(onProgress, extraSteps);
   return limitCatalogBySection(dedupeCatalogItems([...remote, ...sampleFallback(remote)]));
 }
