@@ -1,4 +1,4 @@
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { db } from './client';
 import { feedNotifications } from './schema';
@@ -16,6 +16,29 @@ export async function insertFeedNotifications(
   }
 
   return db.insert(feedNotifications).values(entries).returning();
+}
+
+export async function toggleFeedLike(id: number): Promise<FeedNotification | undefined> {
+  const [current] = await db
+    .select()
+    .from(feedNotifications)
+    .where(eq(feedNotifications.id, id))
+    .limit(1);
+
+  if (!current) {
+    return undefined;
+  }
+
+  const liked = !current.liked;
+  const likeCount = Math.max(0, current.likeCount + (liked ? 1 : -1));
+
+  const [updated] = await db
+    .update(feedNotifications)
+    .set({ liked, likeCount })
+    .where(eq(feedNotifications.id, id))
+    .returning();
+
+  return updated;
 }
 
 export async function clearFeedNotifications(): Promise<void> {

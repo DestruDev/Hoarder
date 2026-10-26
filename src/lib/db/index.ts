@@ -6,7 +6,7 @@ export {
 } from './catalog-seed';
 export { SAMPLE_CATALOG } from './catalog-data';
 export { resetAndSeedFeed, seedFeedIfEmpty, seedFeedNotifications } from './feed-seed';
-export { getFeedNotifications } from './feed-store';
+export { getFeedNotifications, toggleFeedLike } from './feed-store';
 export {
   findCatalogItemByTitleAndType,
   getCatalogItemById,

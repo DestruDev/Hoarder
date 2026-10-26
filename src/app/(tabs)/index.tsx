@@ -11,6 +11,7 @@ import {
   getCatalogItems,
   getFeedNotifications,
   MEDIA_TYPES,
+  toggleFeedLike,
   type CatalogItem,
   type FeedNotification,
   type MediaType,
@@ -108,6 +109,33 @@ export default function FeedScreen() {
     );
   }, [feedFilter, feedItems]);
 
+  async function handleToggleLike(id: number) {
+    const previous = feedItems;
+    setFeedItems((current) =>
+      current.map((item) => {
+        if (item.id !== id) {
+          return item;
+        }
+
+        const liked = !item.liked;
+        return {
+          ...item,
+          liked,
+          likeCount: Math.max(0, item.likeCount + (liked ? 1 : -1)),
+        };
+      }),
+    );
+
+    try {
+      const updated = await toggleFeedLike(id);
+      if (updated) {
+        setFeedItems((current) => current.map((item) => (item.id === id ? updated : item)));
+      }
+    } catch {
+      setFeedItems(previous);
+    }
+  }
+
   return (
     <>
       <Tabs.Screen
@@ -144,40 +172,89 @@ export default function FeedScreen() {
         ) : (
           notifications.map((notification) => {
             const catalogItem = catalogById.get(notification.catalogId);
-            const row = (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}>
+            const likeCount =
+              notification.liked && notification.likeCount < 1 ? 1 : notification.likeCount;
+            const content = (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <MediaCover uri={catalogItem?.coverImageUrl} width={48} height={68} />
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                    <Text style={{ flex: 1 }}>{notification.title}</Text>
-                    <Text style={{ color: colors.textMuted }}>{timeAgo(notification.occurredAt)}</Text>
-                  </View>
+                  <Text>{notification.title}</Text>
                   <Text>{notification.body}</Text>
                 </View>
               </View>
             );
 
-            if (!catalogItem) {
-              return <View key={notification.id}>{row}</View>;
-            }
-
             return (
-              <Link
+              <View
                 key={notification.id}
-                href={{ pathname: '/catalog/[id]', params: { id: String(catalogItem.id) } }}
-                asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={notification.title}>
-                  {row}
-                </Pressable>
-              </Link>
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 4,
+                  paddingVertical: 12,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}>
+                {catalogItem ? (
+                  <Link
+                    href={{ pathname: '/catalog/[id]', params: { id: String(catalogItem.id) } }}
+                    asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={notification.title}
+                      style={{ flex: 1 }}>
+                      {content}
+                    </Pressable>
+                  </Link>
+                ) : (
+                  content
+                )}
+                <View
+                  style={{
+                    width: 72,
+                    alignItems: 'flex-end',
+                    justifyContent: 'space-between',
+                    alignSelf: 'stretch',
+                    minHeight: 68,
+                  }}>
+                  <Text style={{ color: colors.textMuted }}>{timeAgo(notification.occurredAt)}</Text>
+                  <Pressable
+                    onPress={() => handleToggleLike(notification.id)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={notification.liked ? 'Unlike' : 'Like'}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      alignSelf: 'stretch',
+                      height: 32,
+                    }}>
+                    {likeCount > 0 ? (
+                      <Text
+                        style={{
+                          color: notification.liked ? colors.danger : colors.textMuted,
+                          marginRight: 2,
+                        }}>
+                        {likeCount}
+                      </Text>
+                    ) : null}
+                    <View
+                      style={{
+                        width: 22,
+                        height: 32,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Ionicons
+                        name={notification.liked ? 'heart' : 'heart-outline'}
+                        size={22}
+                        color={notification.liked ? colors.danger : colors.textMuted}
+                      />
+                    </View>
+                  </Pressable>
+                </View>
+              </View>
             );
           })
         )}

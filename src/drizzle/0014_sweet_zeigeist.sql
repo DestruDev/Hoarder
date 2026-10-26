@@ -1,0 +1,1 @@
+ALTER TABLE `feed_notifications` ADD `liked` integer DEFAULT false NOT NULL;

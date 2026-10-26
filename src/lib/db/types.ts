@@ -133,6 +133,11 @@ export type FeedNotification = {
   kind: FeedKind;
   occurredAt: string;
   catalogId: number;
+  liked: boolean;
+  likeCount: number;
 };
 
-export type NewFeedNotification = Omit<FeedNotification, 'id'>;
+export type NewFeedNotification = Omit<FeedNotification, 'id' | 'liked' | 'likeCount'> & {
+  liked?: boolean;
+  likeCount?: number;
+};

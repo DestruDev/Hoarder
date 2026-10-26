@@ -50,4 +50,6 @@ export const feedNotifications = sqliteTable('feed_notifications', {
   kind: text('kind').notNull().$type<FeedKind>(),
   occurredAt: text('occurred_at').notNull(),
   catalogId: integer('catalog_id').notNull(),
+  liked: integer('liked', { mode: 'boolean' }).notNull().default(false),
+  likeCount: integer('like_count').notNull().default(0),
 });
