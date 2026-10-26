@@ -1,45 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs, usePathname } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Tabs } from 'expo-router';
 
 import {
-  getSearchHeaderOptions,
-  MediaSearchProvider,
+  ExploreSearchHeader,
+  LibrarySearchHeader,
+  MediaSearchRoot,
+  SettingsSearchHeader,
 } from '@/components/media-search';
 import { colors } from '@/constants/theme';
 
 export default function TabLayout() {
-  const pathname = usePathname();
-  const [isSearching, setIsSearching] = useState(false);
-  const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    const onFeedOrProfile = pathname === '/' || pathname === '/profile';
-
-    if (onFeedOrProfile && isSearching) {
-      setIsSearching(false);
-      setQuery('');
-    }
-  }, [isSearching, pathname]);
-
-  const search = useMemo(
-    () => ({
-      isSearching,
-      query,
-      openSearch: () => setIsSearching(true),
-      closeSearch: () => {
-        setIsSearching(false);
-        setQuery('');
-      },
-      setQuery,
-    }),
-    [isSearching, query],
-  );
-
-  const searchHeader = getSearchHeaderOptions(isSearching);
-
   return (
-    <MediaSearchProvider value={search}>
+    <MediaSearchRoot>
       <Tabs
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
@@ -67,7 +39,7 @@ export default function TabLayout() {
           name="library"
           options={{
             title: 'Library',
-            ...searchHeader,
+            header: LibrarySearchHeader,
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons name={focused ? 'library' : 'library-outline'} size={size} color={color} />
             ),
@@ -77,7 +49,7 @@ export default function TabLayout() {
           name="explore"
           options={{
             title: 'Explore',
-            ...searchHeader,
+            header: ExploreSearchHeader,
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons name={focused ? 'compass' : 'compass-outline'} size={size} color={color} />
             ),
@@ -97,13 +69,13 @@ export default function TabLayout() {
           name="settings"
           options={{
             title: 'Settings',
-            ...searchHeader,
+            header: SettingsSearchHeader,
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
             ),
           }}
         />
       </Tabs>
-    </MediaSearchProvider>
+    </MediaSearchRoot>
   );
 }

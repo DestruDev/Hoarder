@@ -63,10 +63,18 @@ export function ItemActionsMenu({
         <MaterialIcons name="more-horiz" size={24} color={colors.text} />
       </Pressable>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu}>
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="none"
+        presentationStyle="overFullScreen"
+        onRequestClose={closeMenu}>
         <View style={{ flex: 1 }}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close menu"
             onPress={closeMenu}
+            onPressIn={closeMenu}
             style={{
               position: 'absolute',
               top: 0,

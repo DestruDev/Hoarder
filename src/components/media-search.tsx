@@ -1,13 +1,22 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePathname } from 'expo-router';
-import { createContext, useContext, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 
 type MediaSearchContextValue = {
-  isSearching: boolean;
   query: string;
   openSearch: () => void;
   closeSearch: () => void;
@@ -34,11 +43,75 @@ export function useMediaSearch() {
   return value;
 }
 
+export function MediaSearchRoot({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const [isSearching, setIsSearching] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const openSearch = useCallback(() => {
+    setIsSearching(true);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setIsSearching(false);
+    setQuery('');
+  }, []);
+
+  useEffect(() => {
+    if ((pathname === '/' || pathname === '/profile') && isSearching) {
+      setIsSearching(false);
+      setQuery('');
+    }
+  }, [isSearching, pathname]);
+
+  const value = useMemo(
+    () => ({
+      query,
+      openSearch,
+      closeSearch,
+      setQuery,
+    }),
+    [closeSearch, openSearch, query],
+  );
+
+  return (
+    <MediaSearchProvider value={value}>
+      <View style={{ flex: 1 }}>
+        {children}
+        {isSearching ? (
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              left: 0,
+              zIndex: 100,
+              elevation: 100,
+            }}>
+            <HeaderSearchBar />
+          </View>
+        ) : null}
+      </View>
+    </MediaSearchProvider>
+  );
+}
+
 export function HeaderSearchButton() {
   const { openSearch } = useMediaSearch();
 
   return (
-    <Pressable onPress={openSearch} hitSlop={8} style={{ marginRight: 16 }}>
+    <Pressable
+      onPress={openSearch}
+      onPressIn={openSearch}
+      hitSlop={8}
+      style={{
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 4,
+      }}>
       <Ionicons name="search" size={22} color={colors.text} />
     </Pressable>
   );
@@ -47,8 +120,17 @@ export function HeaderSearchButton() {
 export function HeaderSearchBar() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const inputRef = useRef<TextInput>(null);
   const { query, setQuery, closeSearch } = useMediaSearch();
   const placeholder = pathname === '/settings' ? 'Search settings' : 'Search';
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <View
@@ -75,7 +157,7 @@ export function HeaderSearchBar() {
           }}>
           <Ionicons name="search" size={18} color={colors.placeholder} style={{ marginRight: 8 }} />
           <TextInput
-            autoFocus
+            ref={inputRef}
             value={query}
             onChangeText={setQuery}
             placeholder={placeholder}
@@ -91,7 +173,11 @@ export function HeaderSearchBar() {
               paddingVertical: 6,
             }}
           />
-          <Pressable onPress={closeSearch} hitSlop={8} style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
+          <Pressable
+            onPress={closeSearch}
+            onPressIn={closeSearch}
+            hitSlop={8}
+            style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
             <Ionicons name="close" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -100,15 +186,36 @@ export function HeaderSearchBar() {
   );
 }
 
-export function getSearchHeaderOptions(isSearching: boolean) {
-  if (isSearching) {
-    return {
-      header: () => <HeaderSearchBar />,
-    };
-  }
+export function TabSearchHeader({ title }: { title: string }) {
+  const insets = useSafeAreaInsets();
 
-  return {
-    header: undefined,
-    headerRight: () => <HeaderSearchButton />,
-  };
+  return (
+    <View style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
+      <View style={{ height: 44, justifyContent: 'center' }}>
+        <Text style={{ textAlign: 'center', fontSize: 17, fontWeight: '600' }}>{title}</Text>
+        <View
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            justifyContent: 'center',
+          }}>
+          <HeaderSearchButton />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export function LibrarySearchHeader() {
+  return <TabSearchHeader title="Library" />;
+}
+
+export function ExploreSearchHeader() {
+  return <TabSearchHeader title="Explore" />;
+}
+
+export function SettingsSearchHeader() {
+  return <TabSearchHeader title="Settings" />;
 }

@@ -18,8 +18,8 @@ import {
   type Item,
   type ItemStatus,
 } from '@/lib/db';
-import { ScorePicker } from '@/components/score-picker';
-import { COMIC_ORIGIN_LABELS, STATUS_LABELS } from '@/lib/status-labels';
+import { ScorePickerModal } from '@/components/score-picker';
+import { COMIC_ORIGIN_LABELS, formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
 
 function toDateInput(value?: string | null): string {
   if (!value) {
@@ -83,6 +83,7 @@ export default function ItemEditScreen() {
   const [status, setStatus] = useState<ItemStatus>('planning');
   const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin>('american');
   const [score, setScore] = useState<number | null>(null);
+  const [scoreOpen, setScoreOpen] = useState(false);
   const [currentEpisodes, setCurrentEpisodes] = useState('');
   const [currentPages, setCurrentPages] = useState('');
   const [totalPages, setTotalPages] = useState('');
@@ -426,7 +427,28 @@ export default function ItemEditScreen() {
             ) : null}
 
             <Text style={{ color: colors.textMuted, marginTop: 6 }}>Score</Text>
-            <ScorePicker value={score} onChange={setScore} />
+            <Pressable
+              onPress={() => setScoreOpen(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: colors.searchBarBackground,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingHorizontal: 14,
+                paddingVertical: 14,
+              }}>
+              <Text>{score == null ? 'Unscored' : formatScoreOutOfTen(score)}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.placeholder} />
+            </Pressable>
+            <ScorePickerModal
+              visible={scoreOpen}
+              value={score}
+              onChange={setScore}
+              onClose={() => setScoreOpen(false)}
+            />
 
             <Text style={{ color: colors.textMuted, marginTop: 6 }}>Notes</Text>
             <TextInput
