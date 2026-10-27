@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/themed';
@@ -19,6 +19,38 @@ export function ItemActionsMenu({
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.94)).current;
+  const translateY = useRef(new Animated.Value(-6)).current;
+
+  useEffect(() => {
+    if (!menuOpen) {
+      opacity.setValue(0);
+      scale.setValue(0.94);
+      translateY.setValue(-6);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 8,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [menuOpen, opacity, scale, translateY]);
 
   function openMenu() {
     setMenuOpen(true);
@@ -83,7 +115,7 @@ export function ItemActionsMenu({
               left: 0,
             }}
           />
-          <View
+          <Animated.View
             style={{
               position: 'absolute',
               top: insets.top + 44,
@@ -94,6 +126,8 @@ export function ItemActionsMenu({
               borderWidth: 1,
               borderRadius: 10,
               overflow: 'hidden',
+              opacity,
+              transform: [{ scale }, { translateY }],
             }}>
             <Pressable onPress={openEdit} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
               <Text>Edit</Text>
@@ -104,7 +138,7 @@ export function ItemActionsMenu({
               style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
               <Text style={{ color: colors.danger }}>{removing ? 'Removing…' : 'Remove'}</Text>
             </Pressable>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </>

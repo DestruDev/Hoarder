@@ -1,25 +1,22 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 
 import { Screen, ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
-  COMIC_ORIGINS,
   ITEM_STATUSES,
   getItemById,
   isChapteredMediaType,
-  isComicMediaType,
   isPagedMediaType,
   isShowMediaType,
   updateItem,
-  type ComicOrigin,
   type Item,
   type ItemStatus,
 } from '@/lib/db';
 import { ScorePickerModal } from '@/components/score-picker';
-import { COMIC_ORIGIN_LABELS, formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
+import { formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
 
 function toDateInput(value?: string | null): string {
   if (!value) {
@@ -74,21 +71,18 @@ export default function ItemEditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const itemId = Number(id);
-  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const notesOffset = useRef(0);
 
   const [item, setItem] = useState<Item | undefined>();
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [inputFocused, setInputFocused] = useState(false);
   const [status, setStatus] = useState<ItemStatus>('planning');
-  const [mangaOrigin, setMangaOrigin] = useState<ComicOrigin>('american');
   const [score, setScore] = useState<number | null>(null);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [currentEpisodes, setCurrentEpisodes] = useState('');
   const [currentPages, setCurrentPages] = useState('');
-  const [totalPages, setTotalPages] = useState('');
   const [currentChapters, setCurrentChapters] = useState('');
-  const [totalChapters, setTotalChapters] = useState('');
   const [startDate, setStartDate] = useState('');
   const [finishDate, setFinishDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -113,13 +107,10 @@ export default function ItemEditScreen() {
         setItem(row);
         if (row) {
           setStatus(row.status);
-          setMangaOrigin(row.mangaOrigin ?? 'american');
           setScore(row.rating);
           setCurrentEpisodes(row.currentEpisodes != null ? String(row.currentEpisodes) : '');
           setCurrentPages(row.currentPages != null ? String(row.currentPages) : '');
-          setTotalPages(row.totalPages != null ? String(row.totalPages) : '');
           setCurrentChapters(row.currentChapters != null ? String(row.currentChapters) : '');
-          setTotalChapters(row.totalChapters != null ? String(row.totalChapters) : '');
           setStartDate(toDateInput(row.dateAdded));
           setFinishDate(toDateInput(row.finishDate));
           setNotes(row.notes ?? '');
@@ -142,29 +133,6 @@ export default function ItemEditScreen() {
     };
   }, [itemId]);
 
-  useEffect(() => {
-    return () => {
-      if (blurTimeout.current) {
-        clearTimeout(blurTimeout.current);
-      }
-    };
-  }, []);
-
-  const inputFocusProps = {
-    onFocus: () => {
-      if (blurTimeout.current) {
-        clearTimeout(blurTimeout.current);
-        blurTimeout.current = null;
-      }
-      setInputFocused(true);
-    },
-    onBlur: () => {
-      blurTimeout.current = setTimeout(() => {
-        setInputFocused(false);
-      }, 150);
-    },
-  };
-
   async function handleSave() {
     if (!item || saving) {
       return;
@@ -173,23 +141,16 @@ export default function ItemEditScreen() {
     setSaving(true);
     setError(null);
     Keyboard.dismiss();
-    setInputFocused(false);
 
     try {
       const parsedCurrentEpisodes = isShowMediaType(item.mediaType)
         ? parseWholeNumber(currentEpisodes, 'Episodes watched')
         : null;
-      const parsedCurrentPages = isPagedMediaType(item.mediaType, mangaOrigin)
+      const parsedCurrentPages = isPagedMediaType(item.mediaType, item.mangaOrigin)
         ? parseWholeNumber(currentPages, 'Pages read')
         : null;
-      const parsedTotalPages = isPagedMediaType(item.mediaType, mangaOrigin)
-        ? parseWholeNumber(totalPages, 'Total pages')
-        : null;
-      const parsedCurrentChapters = isChapteredMediaType(item.mediaType, mangaOrigin)
+      const parsedCurrentChapters = isChapteredMediaType(item.mediaType, item.mangaOrigin)
         ? parseWholeNumber(currentChapters, 'Chapters read')
-        : null;
-      const parsedTotalChapters = isChapteredMediaType(item.mediaType, mangaOrigin)
-        ? parseWholeNumber(totalChapters, 'Total chapters')
         : null;
       const isCompleted = status === 'completed';
 
@@ -199,24 +160,21 @@ export default function ItemEditScreen() {
         notes: notes.trim() || null,
         dateAdded: parseDate(startDate, 'Start date'),
         finishDate: parseOptionalDate(finishDate, 'Finish date'),
-        mangaOrigin: isComicMediaType(item.mediaType) ? mangaOrigin : null,
         currentEpisodes: isShowMediaType(item.mediaType)
           ? isCompleted && item.totalEpisodes != null
             ? item.totalEpisodes
             : parsedCurrentEpisodes
           : null,
-        currentPages: isPagedMediaType(item.mediaType, mangaOrigin)
-          ? isCompleted && parsedTotalPages != null
-            ? parsedTotalPages
+        currentPages: isPagedMediaType(item.mediaType, item.mangaOrigin)
+          ? isCompleted && item.totalPages != null
+            ? item.totalPages
             : parsedCurrentPages
           : null,
-        totalPages: parsedTotalPages,
-        currentChapters: isChapteredMediaType(item.mediaType, mangaOrigin)
-          ? isCompleted && parsedTotalChapters != null
-            ? parsedTotalChapters
+        currentChapters: isChapteredMediaType(item.mediaType, item.mangaOrigin)
+          ? isCompleted && item.totalChapters != null
+            ? item.totalChapters
             : parsedCurrentChapters
           : null,
-        totalChapters: parsedTotalChapters,
       });
 
       if (!saved) {
@@ -231,43 +189,27 @@ export default function ItemEditScreen() {
     }
   }
 
-  const showCheckmark = inputFocused && !!item;
-
   return (
     <Screen>
       <Stack.Screen
         options={{
           title: 'Edit',
-          headerRight: () =>
-            showCheckmark ? (
-              <Pressable
-                onPress={handleSave}
-                disabled={saving}
-                hitSlop={8}
-                accessibilityLabel="Save"
-                style={{
-                  width: 44,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: saving ? 0.5 : 1,
-                }}>
-                <Ionicons name="checkmark" size={24} color={colors.text} />
-              </Pressable>
-            ) : (
-              <Pressable
-                onPress={() => router.back()}
-                hitSlop={8}
-                accessibilityLabel="Close"
-                style={{
-                  width: 44,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </Pressable>
-            ),
+          headerRight: () => (
+            <Pressable
+              onPress={handleSave}
+              disabled={!item || saving}
+              hitSlop={8}
+              accessibilityLabel="Save"
+              style={{
+                width: 44,
+                height: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: !item || saving ? 0.5 : 1,
+              }}>
+              <Ionicons name="checkmark" size={24} color={colors.text} />
+            </Pressable>
+          ),
         }}
       />
 
@@ -278,12 +220,12 @@ export default function ItemEditScreen() {
       ) : !item ? (
         <Text style={{ padding: 16 }}>Item not found.</Text>
       ) : (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScreenScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}>
+        <ScreenScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 120 }}>
             <Text style={{ color: colors.textMuted }}>Status</Text>
             {ITEM_STATUSES.map((value) => {
               const isSelected = status === value;
@@ -316,7 +258,6 @@ export default function ItemEditScreen() {
               keyboardType="numbers-and-punctuation"
               autoCapitalize="none"
               autoCorrect={false}
-              {...inputFocusProps}
             />
 
             <Text style={{ color: colors.textMuted, marginTop: 6 }}>Finish Date</Text>
@@ -327,36 +268,7 @@ export default function ItemEditScreen() {
               keyboardType="numbers-and-punctuation"
               autoCapitalize="none"
               autoCorrect={false}
-              {...inputFocusProps}
             />
-
-            {isComicMediaType(item.mediaType) ? (
-              <>
-                <Text style={{ color: colors.textMuted, marginTop: 6 }}>Type</Text>
-                {COMIC_ORIGINS.map((value) => {
-                  const isSelected = mangaOrigin === value;
-
-                  return (
-                    <Pressable
-                      key={value}
-                      onPress={() => setMangaOrigin(value)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
-                        borderColor: isSelected ? colors.text : colors.border,
-                        borderWidth: 1,
-                        borderRadius: 10,
-                        paddingHorizontal: 14,
-                        paddingVertical: 12,
-                      }}>
-                      <Text style={{ flex: 1 }}>{COMIC_ORIGIN_LABELS[value]}</Text>
-                      {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </>
-            ) : null}
 
             {isShowMediaType(item.mediaType) ? (
               <>
@@ -368,7 +280,6 @@ export default function ItemEditScreen() {
                     placeholder="watched"
                     keyboardType="number-pad"
                     style={{ flex: 1 }}
-                    {...inputFocusProps}
                   />
                   <Text style={{ color: colors.textMuted }}>/</Text>
                   <Text style={{ minWidth: 40 }}>{item.totalEpisodes ?? '—'}</Text>
@@ -376,7 +287,7 @@ export default function ItemEditScreen() {
               </>
             ) : null}
 
-            {isPagedMediaType(item.mediaType, mangaOrigin) ? (
+            {isPagedMediaType(item.mediaType, item.mangaOrigin) ? (
               <>
                 <Text style={{ color: colors.textMuted, marginTop: 6 }}>Pages</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -386,22 +297,14 @@ export default function ItemEditScreen() {
                     placeholder="read"
                     keyboardType="number-pad"
                     style={{ flex: 1 }}
-                    {...inputFocusProps}
                   />
                   <Text style={{ color: colors.textMuted }}>/</Text>
-                  <TextInput
-                    value={totalPages}
-                    onChangeText={setTotalPages}
-                    placeholder="total"
-                    keyboardType="number-pad"
-                    style={{ flex: 1 }}
-                    {...inputFocusProps}
-                  />
+                  <Text style={{ minWidth: 40 }}>{item.totalPages ?? '—'}</Text>
                 </View>
               </>
             ) : null}
 
-            {isChapteredMediaType(item.mediaType, mangaOrigin) ? (
+            {isChapteredMediaType(item.mediaType, item.mangaOrigin) ? (
               <>
                 <Text style={{ color: colors.textMuted, marginTop: 6 }}>Chapters</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -411,17 +314,9 @@ export default function ItemEditScreen() {
                     placeholder="read"
                     keyboardType="number-pad"
                     style={{ flex: 1 }}
-                    {...inputFocusProps}
                   />
                   <Text style={{ color: colors.textMuted }}>/</Text>
-                  <TextInput
-                    value={totalChapters}
-                    onChangeText={setTotalChapters}
-                    placeholder="total"
-                    keyboardType="number-pad"
-                    style={{ flex: 1 }}
-                    {...inputFocusProps}
-                  />
+                  <Text style={{ minWidth: 40 }}>{item.totalChapters ?? '—'}</Text>
                 </View>
               </>
             ) : null}
@@ -450,36 +345,30 @@ export default function ItemEditScreen() {
               onClose={() => setScoreOpen(false)}
             />
 
-            <Text style={{ color: colors.textMuted, marginTop: 6 }}>Notes</Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Add notes"
-              multiline
-              style={{ minHeight: 96, textAlignVertical: 'top' }}
-              {...inputFocusProps}
-            />
+            <View
+              onLayout={(event) => {
+                notesOffset.current = event.nativeEvent.layout.y;
+              }}>
+              <Text style={{ color: colors.textMuted, marginTop: 6 }}>Notes</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Add notes"
+                multiline
+                style={{ minHeight: 96, textAlignVertical: 'top' }}
+                onFocus={() => {
+                  requestAnimationFrame(() => {
+                    scrollRef.current?.scrollTo({
+                      y: Math.max(0, notesOffset.current - 24),
+                      animated: true,
+                    });
+                  });
+                }}
+              />
+            </View>
 
             {error ? <Text>{error}</Text> : null}
-
-            <Pressable
-              onPress={handleSave}
-              disabled={saving}
-              style={{
-                marginTop: 6,
-                backgroundColor: colors.searchBarBackground,
-                borderColor: colors.border,
-                borderWidth: 1,
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                alignItems: 'center',
-                opacity: saving ? 0.5 : 1,
-              }}>
-              <Text>{saving ? 'Saving…' : 'Save'}</Text>
-            </Pressable>
           </ScreenScrollView>
-        </KeyboardAvoidingView>
       )}
     </Screen>
   );

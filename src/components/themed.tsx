@@ -38,9 +38,15 @@ export function TextInput({ style, placeholderTextColor, ...props }: TextInputPr
   );
 }
 
-export function ScreenScrollView({ style, contentContainerStyle, ...props }: ScrollViewProps) {
+export function ScreenScrollView({
+  style,
+  contentContainerStyle,
+  ref,
+  ...props
+}: ScrollViewProps) {
   return (
     <ScrollView
+      ref={ref}
       style={[{ flex: 1, backgroundColor: colors.background }, style]}
       contentContainerStyle={contentContainerStyle}
       {...props}
