@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
+  clearLibrary,
   resetAndSeed,
   resetAndSeedCatalog,
   resetAndSeedFeed,
@@ -102,6 +103,17 @@ export default function DebugScreen() {
   }
 
   const commands: DebugCommand[] = [
+    {
+      id: 'clear-library',
+      title: 'Clear all library entries',
+      onPress: () =>
+        runCommand('clear-library', async () => {
+          const removed = await clearLibrary();
+          return removed === 0
+            ? 'Library is already empty.'
+            : `Removed ${removed} library ${removed === 1 ? 'entry' : 'entries'}.`;
+        }),
+    },
     {
       id: 'reset-library',
       title: 'Reset & seed sample library items',

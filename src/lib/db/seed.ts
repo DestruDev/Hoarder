@@ -291,7 +291,8 @@ export async function seedIfEmpty(): Promise<Item[]> {
   return seedItems();
 }
 
-export async function resetAndSeed(onProgress?: OnSeedProgress): Promise<Item[]> {
+export async function clearLibrary(): Promise<number> {
+  const existing = await getItems();
   await db.delete(items);
 
   try {
@@ -300,5 +301,10 @@ export async function resetAndSeed(onProgress?: OnSeedProgress): Promise<Item[]>
     // sqlite_sequence is created after the first insert; ignore if missing.
   }
 
+  return existing.length;
+}
+
+export async function resetAndSeed(onProgress?: OnSeedProgress): Promise<Item[]> {
+  await clearLibrary();
   return seedItems(onProgress);
 }

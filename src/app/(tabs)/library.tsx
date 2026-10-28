@@ -60,11 +60,17 @@ export default function LibraryScreen() {
   return (
     <ScreenScrollView
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: 16, gap: 12 }}>
+      contentContainerStyle={{
+        padding: 16,
+        gap: 12,
+        ...(items.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null),
+      }}>
       {error ? <Text>{error}</Text> : null}
 
       {items.length === 0 ? (
-        <Text>No items yet. Seed sample data from Settings → Debug, or add your own.</Text>
+        <Text style={{ textAlign: 'center' }}>
+          Nothing's in your library currently! Try adding entries from the explore tab!
+        </Text>
       ) : visibleItems.length === 0 ? (
         <Text>No matching titles.</Text>
       ) : (
