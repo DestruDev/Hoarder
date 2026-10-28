@@ -6,17 +6,7 @@ export function matchesSearchText(text: string, query: string): boolean {
     return true;
   }
 
-  let queryIndex = 0;
-  for (const character of normalizedText) {
-    if (character === normalizedQuery[queryIndex]) {
-      queryIndex += 1;
-      if (queryIndex === normalizedQuery.length) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return normalizedText.includes(normalizedQuery);
 }
 
 export function matchesMediaName(title: string, query: string): boolean {
