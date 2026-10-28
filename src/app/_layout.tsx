@@ -62,7 +62,7 @@ export default function RootLayout() {
           headerTitleStyle: { color: colors.text },
           contentStyle: { backgroundColor: colors.background },
         }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
         <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
         <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
         <Stack.Screen name="edit/[id]" options={{ title: 'Edit' }} />
