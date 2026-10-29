@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Animated, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/themed';
@@ -46,15 +46,21 @@ export function useMediaSearch() {
 export function MediaSearchRoot({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isSearching, setIsSearching] = useState(false);
+  const [barVisible, setBarVisible] = useState(false);
   const [query, setQuery] = useState('');
 
   const openSearch = useCallback(() => {
     setIsSearching(true);
+    setBarVisible(true);
   }, []);
 
   const closeSearch = useCallback(() => {
     setIsSearching(false);
     setQuery('');
+  }, []);
+
+  const hideSearchBar = useCallback(() => {
+    setBarVisible(false);
   }, []);
 
   useEffect(() => {
@@ -78,19 +84,8 @@ export function MediaSearchRoot({ children }: { children: ReactNode }) {
     <MediaSearchProvider value={value}>
       <View style={{ flex: 1 }}>
         {children}
-        {isSearching ? (
-          <View
-            pointerEvents="box-none"
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              left: 0,
-              zIndex: 100,
-              elevation: 100,
-            }}>
-            <HeaderSearchBar />
-          </View>
+        {barVisible ? (
+          <HeaderSearchBar open={isSearching} onHidden={hideSearchBar} />
         ) : null}
       </View>
     </MediaSearchProvider>
@@ -117,72 +112,132 @@ export function HeaderSearchButton() {
   );
 }
 
-export function HeaderSearchBar() {
+export function HeaderSearchBar({
+  open,
+  onHidden,
+}: {
+  open: boolean;
+  onHidden: () => void;
+}) {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const inputRef = useRef<TextInput>(null);
+  const progress = useRef(new Animated.Value(0)).current;
   const { query, setQuery, closeSearch } = useMediaSearch();
   const placeholder = pathname === '/settings' ? 'Search settings' : 'Search';
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
+    if (open) {
+      Animated.spring(progress, {
+        toValue: 1,
+        friction: 6.5,
+        tension: 68,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
 
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    inputRef.current?.blur();
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        onHidden();
+      }
+    });
+  }, [onHidden, open, progress]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 80);
+
+    return () => clearTimeout(timeout);
+  }, [open]);
 
   return (
-    <View
+    <Animated.View
+      pointerEvents={open ? 'box-none' : 'none'}
       style={{
-        backgroundColor: colors.background,
-        paddingTop: insets.top,
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        left: 0,
+        zIndex: 100,
+        elevation: 100,
+        opacity: progress,
       }}>
       <View
         style={{
-          height: 44,
-          justifyContent: 'center',
-          paddingHorizontal: 16,
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
         }}>
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.searchBarBackground,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: 10,
-            paddingLeft: 10,
-            minHeight: 36,
+            height: 44,
+            justifyContent: 'center',
+            paddingHorizontal: 16,
           }}>
-          <Ionicons name="search" size={18} color={colors.placeholder} style={{ marginRight: 8 }} />
-          <TextInput
-            ref={inputRef}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={placeholder}
-            placeholderTextColor={colors.placeholder}
-            autoCorrect={false}
-            autoCapitalize="none"
-            returnKeyType="search"
-            underlineColorAndroid="transparent"
+          <Animated.View
             style={{
-              flex: 1,
-              color: colors.text,
-              fontSize: 17,
-              paddingVertical: 6,
-            }}
-          />
-          <Pressable
-            onPress={closeSearch}
-            onPressIn={closeSearch}
-            hitSlop={8}
-            style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Ionicons name="close" size={22} color={colors.text} />
-          </Pressable>
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.searchBarBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 10,
+              paddingLeft: 10,
+              minHeight: 36,
+              transform: [
+                {
+                  translateX: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [28, 0],
+                  }),
+                },
+                {
+                  scale: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.9, 1],
+                  }),
+                },
+              ],
+            }}>
+            <Ionicons name="search" size={18} color={colors.placeholder} style={{ marginRight: 8 }} />
+            <TextInput
+              ref={inputRef}
+              value={query}
+              onChangeText={setQuery}
+              placeholder={placeholder}
+              placeholderTextColor={colors.placeholder}
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+              underlineColorAndroid="transparent"
+              style={{
+                flex: 1,
+                color: colors.text,
+                fontSize: 17,
+                paddingVertical: 6,
+              }}
+            />
+            <Pressable
+              onPress={closeSearch}
+              onPressIn={closeSearch}
+              hitSlop={8}
+              style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
+              <Ionicons name="close" size={22} color={colors.text} />
+            </Pressable>
+          </Animated.View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

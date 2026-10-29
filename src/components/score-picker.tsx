@@ -141,11 +141,13 @@ export function ScorePickerModal({
   value,
   onChange,
   onClose,
+  onDone,
 }: {
   visible: boolean;
   value: number | null;
   onChange: (score: number | null) => void;
   onClose: () => void;
+  onDone?: (score: number | null) => void;
 }) {
   const { ratingSystem } = useAppSettings();
   const insets = useSafeAreaInsets();
@@ -188,7 +190,10 @@ export function ScorePickerModal({
           <Text style={{ fontSize: 18 }}>Score</Text>
           {visible ? <ScorePicker key={ratingSystem} value={value} onChange={onChange} /> : null}
           <Pressable
-            onPress={onClose}
+            onPress={() => {
+              onDone?.(value);
+              onClose();
+            }}
             style={{
               backgroundColor: colors.searchBarBackground,
               borderColor: colors.border,

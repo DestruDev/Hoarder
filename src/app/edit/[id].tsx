@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Keyboard, PanResponder, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
-import { Screen, ScreenScrollView, Text, TextInput } from '@/components/themed';
+import { ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
   ITEM_STATUSES,
@@ -70,11 +70,19 @@ function parseWholeNumber(value: string, label: string): number | null {
 
 export default function ItemEditScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
+  const { height: windowHeight } = useWindowDimensions();
   const { formatScoreOutOfTen } = useAppSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const itemId = Number(id);
   const scrollRef = useRef<ScrollView>(null);
   const notesOffset = useRef(0);
+  const closing = useRef(false);
+  const translateY = useRef(new Animated.Value(windowHeight)).current;
+  const currentY = useRef(windowHeight);
+  const dragOrigin = useRef(0);
+  const dragVelocity = useRef(0);
+  const sheetHeight = Math.round(windowHeight * 0.9);
 
   const [item, setItem] = useState<Item | undefined>();
   const [loaded, setLoaded] = useState(false);
@@ -135,28 +143,146 @@ export default function ItemEditScreen() {
     };
   }, [itemId]);
 
-  async function handleSave() {
-    if (!item || saving) {
-      return;
+  const animateSheetTo = useCallback(
+    (toValue: number, onEnd?: (finished: boolean) => void) => {
+      const velocity = dragVelocity.current;
+      dragVelocity.current = 0;
+
+      Animated.spring(translateY, {
+        toValue,
+        velocity: velocity * 1000,
+        tension: 72,
+        friction: 11,
+        overshootClamping: true,
+        restDisplacementThreshold: 1,
+        restSpeedThreshold: 1,
+        useNativeDriver: false,
+      }).start(({ finished }) => {
+        onEnd?.(finished);
+      });
+    },
+    [translateY],
+  );
+
+  const dismiss = useCallback(
+    (afterClose?: () => void) => {
+      if (closing.current) {
+        return;
+      }
+
+      closing.current = true;
+      requestAnimationFrame(() => {
+        Keyboard.dismiss();
+      });
+      animateSheetTo(windowHeight, (finished) => {
+        if (finished) {
+          afterClose ? afterClose() : router.back();
+        } else {
+          closing.current = false;
+        }
+      });
+    },
+    [animateSheetTo, router, windowHeight],
+  );
+
+  const snapBack = useCallback(() => {
+    animateSheetTo(0);
+  }, [animateSheetTo]);
+
+  const snapBackRef = useRef(snapBack);
+  const dismissFromDragRef = useRef(() => {});
+  const sheetHeightRef = useRef(sheetHeight);
+  snapBackRef.current = snapBack;
+  sheetHeightRef.current = sheetHeight;
+
+  function settleFromDrag(velocityY: number) {
+    dragVelocity.current = velocityY;
+    const projectedY = currentY.current + velocityY * 220;
+    if (projectedY > sheetHeightRef.current / 2) {
+      dismissFromDragRef.current();
+    } else {
+      snapBackRef.current();
+    }
+  }
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        gesture.dy > 4 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      onPanResponderGrant: () => {
+        translateY.stopAnimation((value) => {
+          dragOrigin.current = value;
+          currentY.current = value;
+        });
+      },
+      onPanResponderMove: (_, gesture) => {
+        translateY.setValue(Math.max(0, dragOrigin.current + gesture.dy));
+      },
+      onPanResponderRelease: (_, gesture) => {
+        translateY.stopAnimation((value) => {
+          currentY.current = value;
+          settleFromDrag(gesture.vy);
+        });
+      },
+      onPanResponderTerminate: (_, gesture) => {
+        translateY.stopAnimation((value) => {
+          currentY.current = value;
+          settleFromDrag(gesture.vy);
+        });
+      },
+    }),
+  ).current;
+
+  useEffect(() => {
+    const listener = translateY.addListener(({ value }) => {
+      currentY.current = value;
+    });
+    return () => {
+      translateY.removeListener(listener);
+    };
+  }, [translateY]);
+
+  useEffect(() => {
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [translateY]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (closing.current) {
+        return;
+      }
+
+      event.preventDefault();
+      dismiss(() => navigation.dispatch(event.data.action));
+    });
+
+    return unsubscribe;
+  }, [dismiss, navigation]);
+
+  function buildSaveInput() {
+    if (!item) {
+      throw new Error('Item not found.');
     }
 
-    setSaving(true);
-    setError(null);
-    Keyboard.dismiss();
+    const parsedCurrentEpisodes = isShowMediaType(item.mediaType)
+      ? parseWholeNumber(currentEpisodes, 'Episodes watched')
+      : null;
+    const parsedCurrentPages = isPagedMediaType(item.mediaType, item.mangaOrigin)
+      ? parseWholeNumber(currentPages, 'Pages read')
+      : null;
+    const parsedCurrentChapters = isChapteredMediaType(item.mediaType, item.mangaOrigin)
+      ? parseWholeNumber(currentChapters, 'Chapters read')
+      : null;
+    const isCompleted = status === 'completed';
 
-    try {
-      const parsedCurrentEpisodes = isShowMediaType(item.mediaType)
-        ? parseWholeNumber(currentEpisodes, 'Episodes watched')
-        : null;
-      const parsedCurrentPages = isPagedMediaType(item.mediaType, item.mangaOrigin)
-        ? parseWholeNumber(currentPages, 'Pages read')
-        : null;
-      const parsedCurrentChapters = isChapteredMediaType(item.mediaType, item.mangaOrigin)
-        ? parseWholeNumber(currentChapters, 'Chapters read')
-        : null;
-      const isCompleted = status === 'completed';
-
-      const saved = await updateItem(item.id, {
+    return {
+      id: item.id,
+      input: {
         status,
         rating: score,
         notes: notes.trim() || null,
@@ -177,44 +303,96 @@ export default function ItemEditScreen() {
             ? item.totalChapters
             : parsedCurrentChapters
           : null,
-      });
+      },
+    };
+  }
 
-      if (!saved) {
-        throw new Error('Failed to save changes');
-      }
-
-      router.back();
-    } catch (saveError: unknown) {
-      setError(saveError instanceof Error ? saveError.message : 'Failed to save changes');
-    } finally {
-      setSaving(false);
+  async function persistChanges() {
+    const payload = buildSaveInput();
+    const saved = await updateItem(payload.id, payload.input);
+    if (!saved) {
+      throw new Error('Failed to save changes');
     }
   }
 
+  async function handleSave() {
+    if (!item || saving) {
+      snapBack();
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    Keyboard.dismiss();
+
+    try {
+      await persistChanges();
+      dismiss();
+    } catch (saveError: unknown) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save changes');
+      setSaving(false);
+      snapBack();
+    }
+  }
+
+  dismissFromDragRef.current = () => {
+    try {
+      buildSaveInput();
+    } catch (saveError: unknown) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save changes');
+      snapBack();
+      return;
+    }
+
+    dismiss();
+    void persistChanges().catch((saveError: unknown) => {
+      console.error('[Hoarder] Failed to save on dismiss:', saveError);
+    });
+  };
+
   return (
-    <Screen>
+    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <Stack.Screen
         options={{
           title: 'Edit',
-          headerRight: () => (
-            <Pressable
-              onPress={handleSave}
-              disabled={!item || saving}
-              hitSlop={8}
-              accessibilityLabel="Save"
-              style={{
-                width: 44,
-                height: 44,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: !item || saving ? 0.5 : 1,
-              }}>
-              <Ionicons name="checkmark" size={24} color={colors.text} />
-            </Pressable>
-          ),
+          presentation: 'transparentModal',
+          animation: 'none',
+          headerShown: false,
+          contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close edit"
+        onPress={() => dismiss()}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
+        <Animated.View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            opacity: translateY.interpolate({
+              inputRange: [0, sheetHeight],
+              outputRange: [1, 0],
+              extrapolate: 'clamp',
+            }),
+          }}
+        />
+      </Pressable>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <View
+          style={{
+            height: sheetHeight,
+            backgroundColor: colors.background,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderBottomWidth: 0,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            overflow: 'hidden',
+          }}>
+        <View {...panResponder.panHandlers}>
+          <EditHeader onSave={handleSave} disabled={!item || saving} />
+        </View>
       {!loaded ? (
         <Text style={{ padding: 16 }}>Loading...</Text>
       ) : loadError ? (
@@ -345,6 +523,18 @@ export default function ItemEditScreen() {
               value={score}
               onChange={setScore}
               onClose={() => setScoreOpen(false)}
+              onDone={(nextScore) => {
+                setScore(nextScore);
+                if (!item) {
+                  return;
+                }
+
+                void updateItem(item.id, { rating: nextScore }).then((saved) => {
+                  if (saved) {
+                    setItem(saved);
+                  }
+                });
+              }}
             />
 
             <View
@@ -372,6 +562,97 @@ export default function ItemEditScreen() {
             {error ? <Text>{error}</Text> : null}
           </ScreenScrollView>
       )}
-    </Screen>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+function EditHeader({
+  onSave,
+  disabled,
+}: {
+  onSave: () => void;
+  disabled: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const popping = useRef(false);
+
+  function handlePress() {
+    if (disabled || popping.current) {
+      return;
+    }
+
+    popping.current = true;
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.22,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 160,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onSave();
+  }
+
+  return (
+    <View style={{ backgroundColor: colors.background, paddingTop: 8 }}>
+      <View
+        style={{
+          alignItems: 'center',
+          paddingBottom: 8,
+        }}>
+        <View
+          style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: colors.border,
+          }}
+        />
+      </View>
+      <View style={{ height: 48, justifyContent: 'center' }}>
+        <Text
+          style={{
+            textAlign: 'center',
+            fontSize: 17,
+            fontWeight: '600',
+            marginHorizontal: 56,
+          }}>
+          Edit
+        </Text>
+        <Pressable
+          onPress={handlePress}
+          disabled={disabled}
+          hitSlop={8}
+          accessibilityLabel="Save"
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: 0,
+            bottom: 0,
+            justifyContent: 'center',
+          }}>
+          <Animated.View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.text,
+              opacity: disabled ? 0.5 : 1,
+              transform: [{ scale }],
+            }}>
+            <Ionicons name="checkmark" size={26} color={colors.background} />
+          </Animated.View>
+        </Pressable>
+      </View>
+    </View>
   );
 }

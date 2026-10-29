@@ -67,7 +67,16 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
           <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
           <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
-          <Stack.Screen name="edit/[id]" options={{ title: 'Edit' }} />
+          <Stack.Screen
+            name="edit/[id]"
+            options={{
+              title: 'Edit',
+              presentation: 'transparentModal',
+              animation: 'none',
+              headerShown: false,
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
           <Stack.Screen name="form" options={{ title: 'Item' }} />
           <Stack.Screen name="debug" options={{ title: 'Debug' }} />
           <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
