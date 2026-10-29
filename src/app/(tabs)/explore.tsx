@@ -2,15 +2,18 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { MediaPoster } from '@/components/media-cover';
+import { useAppSettings } from '@/components/app-settings';
+import { MediaPoster, MediaRow } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
 import { getCatalogItems, type CatalogItem } from '@/lib/db';
 import { matchesMediaName } from '@/lib/media-search';
+import { mediaTypeLabel } from '@/lib/status-labels';
 
 export default function ExploreScreen() {
   const { query } = useMediaSearch();
+  const { exploreView } = useAppSettings();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,21 +70,40 @@ export default function ExploreScreen() {
         sections.map((section) => (
           <View key={section.id} style={{ gap: 10 }}>
             <Text style={{ fontSize: 18 }}>{section.title}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
-              {section.items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
-                  asChild>
-                  <Pressable>
-                    <MediaPoster title={item.title} coverImageUrl={item.coverImageUrl} />
-                  </Pressable>
-                </Link>
-              ))}
-            </ScrollView>
+            {exploreView === 'list' ? (
+              <View style={{ gap: 8 }}>
+                {section.items.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
+                    asChild>
+                    <Pressable>
+                      <MediaRow
+                        title={item.title}
+                        subtitle={mediaTypeLabel(item.mediaType, item.mangaOrigin)}
+                        coverImageUrl={item.coverImageUrl}
+                      />
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
+                {section.items.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }}
+                    asChild>
+                    <Pressable>
+                      <MediaPoster title={item.title} coverImageUrl={item.coverImageUrl} />
+                    </Pressable>
+                  </Link>
+                ))}
+              </ScrollView>
+            )}
           </View>
         ))
       )}

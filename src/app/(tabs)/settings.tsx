@@ -19,13 +19,25 @@ export default function SettingsScreen() {
 
   const settings: SettingItem[] = [
     {
+      id: 'preferences',
+      title: 'Preferences',
+      onPress: () => router.push('/preferences'),
+    },
+    {
       id: 'debug',
       title: 'Debug',
       onPress: () => router.push('/debug'),
     },
   ];
 
-  const visibleSettings = settings.filter((setting) => matchesSearchText(setting.title, query));
+  const visibleSettings = settings.filter((setting) =>
+    setting.id === 'preferences'
+      ? matchesSearchText(
+          'Preferences rating system decimal whole library explore list card view',
+          query,
+        )
+      : matchesSearchText(setting.title, query),
+  );
 
   return (
     <ScreenScrollView

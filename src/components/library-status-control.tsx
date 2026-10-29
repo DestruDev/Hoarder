@@ -16,8 +16,9 @@ import {
   type Item,
   type ItemStatus,
 } from '@/lib/db';
+import { useAppSettings } from '@/components/app-settings';
 import { ScorePicker } from '@/components/score-picker';
-import { formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
+import { STATUS_LABELS } from '@/lib/status-labels';
 
 type QuickEdit = 'status' | 'progress' | 'score';
 
@@ -102,6 +103,7 @@ export function LibraryStatusControl({
   onLibraryItemChange: (item: Item) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { formatScoreOutOfTen, ratingSystem } = useAppSettings();
   const [open, setOpen] = useState<QuickEdit | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<ItemStatus | null>(libraryItem?.status ?? null);
   const [selectedScore, setSelectedScore] = useState<number | null>(libraryItem?.rating ?? null);
@@ -329,7 +331,7 @@ export function LibraryStatusControl({
             ) : null}
 
             {open === 'score' ? (
-              <ScorePicker value={selectedScore} onChange={setSelectedScore} />
+              <ScorePicker key={ratingSystem} value={selectedScore} onChange={setSelectedScore} />
             ) : null}
 
             {error ? <Text>{error}</Text> : null}

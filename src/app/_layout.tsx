@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { AppSettingsProvider } from '@/components/app-settings';
 import { Screen, Text } from '@/components/themed';
 import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
@@ -54,22 +55,25 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { color: colors.text },
-          contentStyle: { backgroundColor: colors.background },
-        }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
-        <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
-        <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
-        <Stack.Screen name="edit/[id]" options={{ title: 'Edit' }} />
-        <Stack.Screen name="form" options={{ title: 'Item' }} />
-        <Stack.Screen name="debug" options={{ title: 'Debug' }} />
-        <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
-      </Stack>
+      <AppSettingsProvider>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            headerTitleStyle: { color: colors.text },
+            contentStyle: { backgroundColor: colors.background },
+          }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
+          <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
+          <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
+          <Stack.Screen name="edit/[id]" options={{ title: 'Edit' }} />
+          <Stack.Screen name="form" options={{ title: 'Item' }} />
+          <Stack.Screen name="debug" options={{ title: 'Debug' }} />
+          <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
+          <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
+        </Stack>
+      </AppSettingsProvider>
     </ThemeProvider>
   );
 }

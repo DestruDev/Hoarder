@@ -5,6 +5,7 @@ import {
   type ComicOrigin,
   type ItemStatus,
   type MediaType,
+  type RatingSystem,
   type ReleaseStatus,
 } from '@/lib/db/types';
 
@@ -161,11 +162,15 @@ export function libraryCountLabel(
   return mediaTypeLabel(mediaType, mangaOrigin);
 }
 
-export function formatScore(rating: number): string {
+export function formatScore(rating: number, ratingSystem: RatingSystem = 'decimal'): string {
+  if (ratingSystem === 'whole') {
+    return String(Math.round(rating));
+  }
+
   const rounded = Math.round(rating * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-export function formatScoreOutOfTen(rating: number): string {
-  return `${formatScore(rating)}/10`;
+export function formatScoreOutOfTen(rating: number, ratingSystem: RatingSystem = 'decimal'): string {
+  return `${formatScore(rating, ratingSystem)}/10`;
 }

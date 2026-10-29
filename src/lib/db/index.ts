@@ -26,9 +26,10 @@ export {
   updateItem,
 } from './items';
 export { getProfile, saveProfile } from './profile-store';
+export { DEFAULT_APP_SETTINGS, getAppSettings, saveAppSettings } from './settings-store';
 export { clearLibrary, resetAndSeed, sampleItemsFromCatalog, seedIfEmpty, seedItems } from './seed';
-export { catalog, feedNotifications, items, profile } from './schema';
-export { COMIC_ORIGINS, FEED_KINDS, ITEM_STATUSES, MEDIA_TYPES, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
+export { appSettings, catalog, feedNotifications, items, profile } from './schema';
+export { COLLECTION_VIEWS, COMIC_ORIGINS, FEED_KINDS, ITEM_STATUSES, MEDIA_TYPES, RATING_SYSTEMS, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
 export type {
   CatalogItem,
   ComicOrigin,
@@ -38,6 +39,9 @@ export type {
   ItemFilters,
   ItemStatus,
   MediaType,
+  RatingSystem,
+  CollectionView,
+  AppSettings,
   NewCatalogItem,
   NewItemInput,
   Profile,

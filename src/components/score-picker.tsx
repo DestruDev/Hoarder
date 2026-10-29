@@ -1,49 +1,60 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Modal, Pressable, ScrollView, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAppSettings } from '@/components/app-settings';
 import { Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
+import type { RatingSystem } from '@/lib/db';
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const SIDE_PADDING = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
 
-function buildScores(): Array<number | null> {
+function buildScores(ratingSystem: RatingSystem): Array<number | null> {
   const scores: Array<number | null> = [null];
+  if (ratingSystem === 'whole') {
+    for (let score = 1; score <= 10; score += 1) {
+      scores.push(score);
+    }
+    return scores;
+  }
+
   for (let tenths = 10; tenths <= 100; tenths += 1) {
     scores.push(tenths / 10);
   }
   return scores;
 }
 
-const SCORES = buildScores();
-
-function scoreEquals(left: number | null, right: number | null): boolean {
+function scoreEquals(left: number | null, right: number | null, ratingSystem: RatingSystem): boolean {
   if (left == null || right == null) {
     return left == right;
+  }
+
+  if (ratingSystem === 'whole') {
+    return Math.round(left) === Math.round(right);
   }
 
   return Math.round(left * 10) === Math.round(right * 10);
 }
 
-function scoreIndex(value: number | null): number {
-  const index = SCORES.findIndex((score) => scoreEquals(score, value));
+function scoreIndex(scores: Array<number | null>, value: number | null, ratingSystem: RatingSystem): number {
+  const index = scores.findIndex((score) => scoreEquals(score, value, ratingSystem));
   return index < 0 ? 0 : index;
 }
 
-function labelFor(score: number | null): string {
+function labelFor(score: number | null, ratingSystem: RatingSystem): string {
   if (score == null) {
     return 'Unscored';
   }
 
-  return score.toFixed(1);
+  return ratingSystem === 'whole' ? String(Math.round(score)) : score.toFixed(1);
 }
 
-function indexFromOffset(offsetY: number): number {
+function indexFromOffset(offsetY: number, length: number): number {
   const index = Math.round(offsetY / ITEM_HEIGHT);
-  return Math.min(SCORES.length - 1, Math.max(0, index));
+  return Math.min(length - 1, Math.max(0, index));
 }
 
 export function ScorePicker({
@@ -53,8 +64,10 @@ export function ScorePicker({
   value: number | null;
   onChange: (score: number | null) => void;
 }) {
+  const { ratingSystem } = useAppSettings();
+  const scores = useMemo(() => buildScores(ratingSystem), [ratingSystem]);
   const listRef = useRef<ScrollView>(null);
-  const initialOffset = useRef(scoreIndex(value) * ITEM_HEIGHT).current;
+  const initialOffset = useRef(scoreIndex(scores, value, ratingSystem) * ITEM_HEIGHT).current;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -65,7 +78,7 @@ export function ScorePicker({
   }, [initialOffset]);
 
   function commitOffset(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    onChange(SCORES[indexFromOffset(event.nativeEvent.contentOffset.y)] ?? null);
+    onChange(scores[indexFromOffset(event.nativeEvent.contentOffset.y, scores.length)] ?? null);
   }
 
   return (
@@ -97,8 +110,8 @@ export function ScorePicker({
         onScrollEndDrag={commitOffset}
         style={{ backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingVertical: SIDE_PADDING }}>
-        {SCORES.map((score, index) => {
-          const selected = scoreEquals(score, value);
+        {scores.map((score, index) => {
+          const selected = scoreEquals(score, value, ratingSystem);
 
           return (
             <Pressable
@@ -113,7 +126,7 @@ export function ScorePicker({
                 justifyContent: 'center',
               }}>
               <Text style={{ color: selected ? colors.text : colors.textMuted, fontSize: 18 }}>
-                {labelFor(score)}
+                {labelFor(score, ratingSystem)}
               </Text>
             </Pressable>
           );
@@ -134,6 +147,7 @@ export function ScorePickerModal({
   onChange: (score: number | null) => void;
   onClose: () => void;
 }) {
+  const { ratingSystem } = useAppSettings();
   const insets = useSafeAreaInsets();
 
   return (
@@ -172,7 +186,7 @@ export function ScorePickerModal({
             gap: 10,
           }}>
           <Text style={{ fontSize: 18 }}>Score</Text>
-          {visible ? <ScorePicker value={value} onChange={onChange} /> : null}
+          {visible ? <ScorePicker key={ratingSystem} value={value} onChange={onChange} /> : null}
           <Pressable
             onPress={onClose}
             style={{

@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 
+import { useAppSettings } from '@/components/app-settings';
 import { Screen, ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
@@ -16,7 +17,7 @@ import {
   type ItemStatus,
 } from '@/lib/db';
 import { ScorePickerModal } from '@/components/score-picker';
-import { formatScoreOutOfTen, STATUS_LABELS } from '@/lib/status-labels';
+import { STATUS_LABELS } from '@/lib/status-labels';
 
 function toDateInput(value?: string | null): string {
   if (!value) {
@@ -69,6 +70,7 @@ function parseWholeNumber(value: string, label: string): number | null {
 
 export default function ItemEditScreen() {
   const router = useRouter();
+  const { formatScoreOutOfTen } = useAppSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const itemId = Number(id);
   const scrollRef = useRef<ScrollView>(null);

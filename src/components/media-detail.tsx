@@ -1,11 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { useAppSettings } from '@/components/app-settings';
 import { ItemActionsMenu } from '@/components/item-actions-menu';
 import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
-import { formatScore, mediaTypeLabel, progressValueLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
+import { mediaTypeLabel, progressValueLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
 
 export type MediaDetails = Pick<
   CatalogItem,
@@ -23,6 +24,7 @@ export function MediaDetail({
   onLibraryItemChange: (item: Item | undefined) => void;
   onRemoved: () => void;
 }) {
+  const { formatScore } = useAppSettings();
   const totalEpisodes = media.totalEpisodes ?? libraryItem?.totalEpisodes;
   const totalPages = libraryItem?.totalPages ?? media.totalPages;
   const totalChapters = libraryItem?.totalChapters ?? media.totalChapters;

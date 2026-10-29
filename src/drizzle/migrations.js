@@ -17,6 +17,8 @@ import m0012 from './0012_great_trish_tilby.sql';
 import m0013 from './0013_big_masque.sql';
 import m0014 from './0014_sweet_zeigeist.sql';
 import m0015 from './0015_greedy_lord_tyger.sql';
+import m0016 from './0016_heavy_agent_brand.sql';
+import m0017 from './0017_faithful_pepper_potts.sql'; // view columns default to list/card
 
   export default {
     journal,
@@ -36,7 +38,9 @@ m0011,
 m0012,
 m0013,
 m0014,
-m0015
+m0015,
+m0016,
+m0017
     }
   }
   

@@ -113,6 +113,20 @@
       "when": 1792999816937,
       "tag": "0015_greedy_lord_tyger",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1793239451825,
+      "tag": "0016_heavy_agent_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1793240880868,
+      "tag": "0017_faithful_pepper_potts",
+      "breakpoints": true
     }
   ]
 }

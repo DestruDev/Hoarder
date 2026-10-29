@@ -3,7 +3,8 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { MediaRow } from '@/components/media-cover';
+import { useAppSettings } from '@/components/app-settings';
+import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/components/media-cover';
 import { useMediaSearch } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
 import { ScreenScrollView, Text } from '@/components/themed';
@@ -14,6 +15,8 @@ import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
   const { query } = useMediaSearch();
+  const { libraryView } = useAppSettings();
+  const { posterWidth, posterHeight } = usePosterSize();
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Partial<Record<ItemStatus, boolean>>>({});
@@ -55,6 +58,76 @@ export default function LibraryScreen() {
       ...current,
       [status]: !current[status],
     }));
+  }
+
+  function renderItem(item: Item) {
+    const notesButton = item.notes?.trim() ? (
+      <Pressable
+        onPress={() => setNotesItem(item)}
+        hitSlop={8}
+        style={{
+          padding: 8,
+          ...(libraryView === 'card'
+            ? { position: 'absolute', top: 4, right: 0 }
+            : null),
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Open notes">
+        <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
+      </Pressable>
+    ) : null;
+
+    if (libraryView === 'card') {
+      return (
+        <View key={item.id} style={{ width: posterWidth }}>
+          <Link href={{ pathname: '/item/[id]', params: { id: String(item.id) } }} asChild>
+            <Pressable>
+              <MediaPoster
+                title={item.title}
+                coverImageUrl={item.coverImageUrl}
+                rating={item.rating}
+                width={posterWidth}
+                height={posterHeight}
+              />
+            </Pressable>
+          </Link>
+          {notesButton}
+        </View>
+      );
+    }
+
+    return (
+      <View
+        key={item.id}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 4,
+          paddingVertical: 2,
+          gap: 4,
+        }}>
+        <Link href={{ pathname: '/item/[id]', params: { id: String(item.id) } }} asChild>
+          <Pressable style={{ flex: 1 }}>
+            <MediaRow
+              title={item.title}
+              subtitle={libraryCountLabel(item.mediaType, {
+                mangaOrigin: item.mangaOrigin,
+                currentEpisodes: item.currentEpisodes,
+                totalEpisodes: item.totalEpisodes,
+                currentPages: item.currentPages,
+                totalPages: item.totalPages,
+                currentChapters: item.currentChapters,
+                totalChapters: item.totalChapters,
+                completed: item.status === 'completed',
+              })}
+              rating={item.rating}
+              coverImageUrl={item.coverImageUrl}
+            />
+          </Pressable>
+        </Link>
+        {notesButton}
+      </View>
+    );
   }
 
   return (
@@ -105,49 +178,9 @@ export default function LibraryScreen() {
               </Pressable>
 
               {isOpen
-                ? group.items.map((item) => (
-                    <View
-                      key={item.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 4,
-                        paddingVertical: 2,
-                        gap: 4,
-                      }}>
-                      <Link
-                        href={{ pathname: '/item/[id]', params: { id: String(item.id) } }}
-                        asChild>
-                        <Pressable style={{ flex: 1 }}>
-                          <MediaRow
-                            title={item.title}
-                            subtitle={libraryCountLabel(item.mediaType, {
-                              mangaOrigin: item.mangaOrigin,
-                              currentEpisodes: item.currentEpisodes,
-                              totalEpisodes: item.totalEpisodes,
-                              currentPages: item.currentPages,
-                              totalPages: item.totalPages,
-                              currentChapters: item.currentChapters,
-                              totalChapters: item.totalChapters,
-                              completed: item.status === 'completed',
-                            })}
-                            rating={item.rating}
-                            coverImageUrl={item.coverImageUrl}
-                          />
-                        </Pressable>
-                      </Link>
-                      {item.notes?.trim() ? (
-                        <Pressable
-                          onPress={() => setNotesItem(item)}
-                          hitSlop={8}
-                          style={{ padding: 8 }}
-                          accessibilityRole="button"
-                          accessibilityLabel="Open notes">
-                          <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  ))
+                ? libraryView === 'card'
+                  ? <MediaPosterGrid>{group.items.map(renderItem)}</MediaPosterGrid>
+                  : group.items.map(renderItem)
                 : null}
             </View>
           );

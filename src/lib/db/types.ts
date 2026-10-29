@@ -97,6 +97,20 @@ export type Profile = {
   avatarUrl: string | null;
 };
 
+export const RATING_SYSTEMS = ['decimal', 'whole'] as const;
+
+export type RatingSystem = (typeof RATING_SYSTEMS)[number];
+
+export const COLLECTION_VIEWS = ['list', 'card'] as const;
+
+export type CollectionView = (typeof COLLECTION_VIEWS)[number];
+
+export type AppSettings = {
+  ratingSystem: RatingSystem;
+  libraryView: CollectionView;
+  exploreView: CollectionView;
+};
+
 export type CatalogItem = {
   id: number;
   title: string;
