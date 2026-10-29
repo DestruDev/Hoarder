@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, Pressable, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/components/media-cover';
@@ -147,44 +147,21 @@ export default function LibraryScreen() {
       ) : visibleItems.length === 0 ? (
         <Text>No matching titles.</Text>
       ) : (
-        groups.map((group) => {
-          const isOpen = isSearching || Boolean(expanded[group.status]);
-
-          return (
-            <View key={group.status} style={{ gap: 8 }}>
-              <Pressable
-                onPress={() => {
-                  if (!isSearching) {
-                    toggleStatus(group.status);
-                  }
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.searchBarBackground,
-                  borderColor: colors.border,
-                  borderWidth: 1,
-                  borderRadius: 10,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                }}>
-                <Text style={{ flex: 1 }}>{STATUS_LABELS[group.status]}</Text>
-                <Text style={{ color: colors.textMuted, marginRight: 8 }}>{group.items.length}</Text>
-                <Ionicons
-                  name={isOpen ? 'chevron-down' : 'chevron-forward'}
-                  size={18}
-                  color={colors.text}
-                />
-              </Pressable>
-
-              {isOpen
-                ? libraryView === 'card'
-                  ? <MediaPosterGrid>{group.items.map(renderItem)}</MediaPosterGrid>
-                  : group.items.map(renderItem)
-                : null}
-            </View>
-          );
-        })
+        groups.map((group) => (
+          <LibraryStatusGroup
+            key={group.status}
+            title={STATUS_LABELS[group.status]}
+            count={group.items.length}
+            open={isSearching || Boolean(expanded[group.status])}
+            canToggle={!isSearching}
+            onToggle={() => toggleStatus(group.status)}>
+            {libraryView === 'card' ? (
+              <MediaPosterGrid>{group.items.map(renderItem)}</MediaPosterGrid>
+            ) : (
+              group.items.map(renderItem)
+            )}
+          </LibraryStatusGroup>
+        ))
       )}
 
       <NotesModal
@@ -207,5 +184,158 @@ export default function LibraryScreen() {
         }}
       />
     </ScreenScrollView>
+  );
+}
+
+function LibraryStatusGroup({
+  title,
+  count,
+  open,
+  canToggle,
+  onToggle,
+  children,
+}: {
+  title: string;
+  count: number;
+  open: boolean;
+  canToggle: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const highlight = useRef(new Animated.Value(0)).current;
+  const progress = useRef(new Animated.Value(0)).current;
+  const [shown, setShown] = useState(open);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (open) {
+      setShown(true);
+      if (contentHeight === 0) {
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 200,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished && !cancelled) {
+        setShown(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contentHeight, open, progress]);
+
+  function flash() {
+    if (!canToggle) {
+      return;
+    }
+
+    highlight.stopAnimation();
+    highlight.setValue(0);
+    Animated.sequence([
+      Animated.timing(highlight, {
+        toValue: 1,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(highlight, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+
+  return (
+    <View>
+      <Pressable
+        onPress={canToggle ? onToggle : undefined}
+        onPressIn={flash}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.searchBarBackground,
+          borderColor: colors.border,
+          borderWidth: 1,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          overflow: 'hidden',
+        }}>
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            backgroundColor: '#ffffff',
+            opacity: highlight.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.07],
+            }),
+          }}
+        />
+        <Text style={{ flex: 1 }}>{title}</Text>
+        <Text style={{ color: colors.textMuted, marginRight: 8 }}>{count}</Text>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '90deg'],
+                }),
+              },
+            ],
+          }}>
+          <Ionicons name="chevron-forward" size={18} color={colors.text} />
+        </Animated.View>
+      </Pressable>
+
+      {shown ? (
+        <Animated.View
+          style={{
+            height: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, Math.max(contentHeight, 1)],
+            }),
+            opacity: progress,
+            overflow: 'hidden',
+          }}>
+          <View
+            style={{ position: 'absolute', top: 0, right: 0, left: 0, paddingTop: 8 }}
+            onLayout={(event) => {
+              const nextHeight = Math.round(event.nativeEvent.layout.height);
+              if (nextHeight > 0 && nextHeight !== contentHeight) {
+                setContentHeight(nextHeight);
+              }
+            }}>
+            {children}
+          </View>
+        </Animated.View>
+      ) : null}
+    </View>
   );
 }
