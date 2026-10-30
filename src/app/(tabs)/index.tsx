@@ -1,24 +1,20 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, Tabs, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, View } from 'react-native';
 
 import { MediaCover } from '@/components/media-cover';
-import { ScreenScrollView, Text } from '@/components/themed';
+import { FeedHeader, useMediaSearch } from '@/components/media-search';
+import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
   getCatalogItems,
   getFeedNotifications,
-  MEDIA_TYPES,
   toggleFeedLike,
   type CatalogItem,
   type FeedNotification,
-  type MediaType,
 } from '@/lib/db';
-import { MEDIA_TYPE_LABELS } from '@/lib/status-labels';
-
-type FeedFilter = MediaType | 'friend' | null;
+import { matchesFeedFilter } from '@/lib/media-search';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -52,16 +48,8 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-const FILTER_OPTIONS: { value: FeedFilter; label: string }[] = [
-  { value: null, label: 'All' },
-  ...MEDIA_TYPES.map((type) => ({ value: type, label: MEDIA_TYPE_LABELS[type] })),
-  { value: 'friend', label: 'Friend activity' },
-];
-
 export default function FeedScreen() {
-  const insets = useSafeAreaInsets();
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [feedFilter, setFeedFilter] = useState<FeedFilter>(null);
+  const { feedFilter } = useMediaSearch();
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [feedItems, setFeedItems] = useState<FeedNotification[]>([]);
 
@@ -97,17 +85,11 @@ export default function FeedScreen() {
     return map;
   }, [catalogItems]);
 
-  const notifications = useMemo(() => {
-    const visible = !feedFilter
-      ? feedItems
-      : feedFilter === 'friend'
-        ? feedItems.filter((item) => item.kind === 'friend')
-        : feedItems.filter((item) => item.kind === 'media' && item.mediaType === feedFilter);
-
-    return [...visible].sort(
+  const notifications = [...feedItems]
+    .filter((item) => matchesFeedFilter(item, feedFilter))
+    .sort(
       (left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
     );
-  }, [feedFilter, feedItems]);
 
   async function handleToggleLike(id: number) {
     const previous = feedItems;
@@ -137,31 +119,8 @@ export default function FeedScreen() {
   }
 
   return (
-    <>
-      <Tabs.Screen
-        options={{
-          headerRight: () => (
-            <Pressable
-              onPress={() => setFilterOpen(true)}
-              hitSlop={8}
-              accessibilityLabel="Filter feed"
-              style={{
-                width: 44,
-                height: 44,
-                marginRight: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-              <Ionicons
-                name={feedFilter ? 'funnel' : 'funnel-outline'}
-                size={22}
-                color={colors.text}
-              />
-            </Pressable>
-          ),
-        }}
-      />
-
+    <Screen>
+      <FeedHeader />
       <ScreenScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
         {notifications.length === 0 ? (
           <Text style={{ paddingVertical: 12 }}>
@@ -259,57 +218,6 @@ export default function FeedScreen() {
           })
         )}
       </ScreenScrollView>
-
-      <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}>
-        <View style={{ flex: 1 }}>
-          <Pressable
-            onPress={() => setFilterOpen(false)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              left: 0,
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              top: insets.top + 44,
-              right: 12,
-              minWidth: 168,
-              backgroundColor: colors.searchBarBackground,
-              borderColor: colors.border,
-              borderWidth: 1,
-              borderRadius: 10,
-              overflow: 'hidden',
-            }}>
-            {FILTER_OPTIONS.map((option) => {
-              const isSelected = feedFilter === option.value;
-
-              return (
-                <Pressable
-                  key={option.label}
-                  onPress={() => {
-                    setFeedFilter(option.value);
-                    setFilterOpen(false);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    borderTopWidth: option.value === 'friend' ? 1 : 0,
-                    borderTopColor: colors.border,
-                  }}>
-                  <Text style={{ flex: 1 }}>{option.label}</Text>
-                  {isSelected ? <Ionicons name="checkmark" size={18} color={colors.text} /> : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </Modal>
-    </>
+    </Screen>
   );
 }

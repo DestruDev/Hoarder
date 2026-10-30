@@ -5,16 +5,16 @@ import { Animated, Easing, Pressable, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/components/media-cover';
-import { useMediaSearch } from '@/components/media-search';
+import { LibrarySearchHeader, useMediaSearch } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
-import { ScreenScrollView, Text } from '@/components/themed';
+import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { getItems, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
-import { matchesMediaName } from '@/lib/media-search';
+import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
-  const { query } = useMediaSearch();
+  const { query, filter } = useMediaSearch();
   const { libraryView } = useAppSettings();
   const { posterWidth, posterHeight } = usePosterSize();
   const [items, setItems] = useState<Item[]>([]);
@@ -45,7 +45,9 @@ export default function LibraryScreen() {
     }, []),
   );
 
-  const visibleItems = items.filter((item) => matchesMediaName(item.title, query));
+  const visibleItems = items.filter(
+    (item) => matchesMediaName(item.title, query) && matchesMediaTypeFilter(item, filter),
+  );
   const isSearching = query.trim().length > 0;
 
   const groups = ITEM_STATUSES.map((status) => ({
@@ -131,13 +133,15 @@ export default function LibraryScreen() {
   }
 
   return (
-    <ScreenScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{
-        padding: 16,
-        gap: 12,
-        ...(items.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null),
-      }}>
+    <Screen>
+      <LibrarySearchHeader />
+      <ScreenScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          padding: 16,
+          gap: 12,
+          ...(items.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null),
+        }}>
       {error ? <Text>{error}</Text> : null}
 
       {items.length === 0 ? (
@@ -183,7 +187,8 @@ export default function LibraryScreen() {
           setNotesItem(saved.notes?.trim() ? saved : null);
         }}
       />
-    </ScreenScrollView>
+      </ScreenScrollView>
+    </Screen>
   );
 }
 

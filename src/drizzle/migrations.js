@@ -18,7 +18,8 @@ import m0013 from './0013_big_masque.sql';
 import m0014 from './0014_sweet_zeigeist.sql';
 import m0015 from './0015_greedy_lord_tyger.sql';
 import m0016 from './0016_heavy_agent_brand.sql';
-import m0017 from './0017_faithful_pepper_potts.sql'; // view columns default to list/card
+import m0017 from './0017_faithful_pepper_potts.sql';
+import m0018 from './0018_strong_mac_gargan.sql'; // split_comic_filter default 0
 
   export default {
     journal,
@@ -40,7 +41,8 @@ m0013,
 m0014,
 m0015,
 m0016,
-m0017
+m0017,
+m0018
     }
   }
   

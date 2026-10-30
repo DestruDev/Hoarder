@@ -127,6 +127,13 @@
       "when": 1793240880868,
       "tag": "0017_faithful_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1793347086164,
+      "tag": "0018_strong_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

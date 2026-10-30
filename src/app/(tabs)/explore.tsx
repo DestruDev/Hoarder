@@ -4,15 +4,15 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaRow } from '@/components/media-cover';
-import { useMediaSearch } from '@/components/media-search';
-import { ScreenScrollView, Text } from '@/components/themed';
+import { ExploreSearchHeader, useMediaSearch } from '@/components/media-search';
+import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
 import { getCatalogItems, type CatalogItem } from '@/lib/db';
-import { matchesMediaName } from '@/lib/media-search';
+import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
 import { mediaTypeLabel } from '@/lib/status-labels';
 
 export default function ExploreScreen() {
-  const { query } = useMediaSearch();
+  const { query, filter } = useMediaSearch();
   const { exploreView } = useAppSettings();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,9 @@ export default function ExploreScreen() {
     }, []),
   );
 
-  const visibleItems = items.filter((item) => matchesMediaName(item.title, query));
+  const visibleItems = items.filter(
+    (item) => matchesMediaName(item.title, query) && matchesMediaTypeFilter(item, filter),
+  );
   const sections = CATALOG_SECTIONS.map((section) => ({
     ...section,
     items: visibleItems.filter((item) => {
@@ -57,9 +59,11 @@ export default function ExploreScreen() {
   })).filter((section) => section.items.length > 0);
 
   return (
-    <ScreenScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: 16, gap: 20 }}>
+    <Screen>
+      <ExploreSearchHeader />
+      <ScreenScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 20 }}>
       {error ? <Text>{error}</Text> : null}
 
       {items.length === 0 ? (
@@ -107,6 +111,7 @@ export default function ExploreScreen() {
           </View>
         ))
       )}
-    </ScreenScrollView>
+      </ScreenScrollView>
+    </Screen>
   );
 }

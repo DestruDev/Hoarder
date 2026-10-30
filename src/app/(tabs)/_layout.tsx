@@ -2,12 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, Tabs } from 'expo-router';
 import { useState } from 'react';
 
-import {
-  ExploreSearchHeader,
-  LibrarySearchHeader,
-  MediaSearchRoot,
-  SettingsSearchHeader,
-} from '@/components/media-search';
+import { MediaSearchRoot } from '@/components/media-search';
 import { colors } from '@/constants/theme';
 
 export default function TabLayout() {
@@ -36,6 +31,7 @@ export default function TabLayout() {
             listeners={{ focus: () => setParentTitle('Feed') }}
             options={{
               title: 'Feed',
+              headerShown: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons name={focused ? 'newspaper' : 'newspaper-outline'} size={size} color={color} />
               ),
@@ -46,7 +42,7 @@ export default function TabLayout() {
             listeners={{ focus: () => setParentTitle('Library') }}
             options={{
               title: 'Library',
-              header: LibrarySearchHeader,
+              headerShown: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons name={focused ? 'library' : 'library-outline'} size={size} color={color} />
               ),
@@ -57,7 +53,7 @@ export default function TabLayout() {
             listeners={{ focus: () => setParentTitle('Explore') }}
             options={{
               title: 'Explore',
-              header: ExploreSearchHeader,
+              headerShown: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons name={focused ? 'compass' : 'compass-outline'} size={size} color={color} />
               ),
@@ -79,7 +75,7 @@ export default function TabLayout() {
             listeners={{ focus: () => setParentTitle('Settings') }}
             options={{
               title: 'Settings',
-              header: SettingsSearchHeader,
+              headerShown: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
               ),

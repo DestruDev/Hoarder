@@ -2,8 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { useMediaSearch } from '@/components/media-search';
-import { ScreenScrollView, Text } from '@/components/themed';
+import { SettingsSearchHeader, useMediaSearch } from '@/components/media-search';
+import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { matchesSearchText } from '@/lib/media-search';
 
@@ -40,9 +40,11 @@ export default function SettingsScreen() {
   );
 
   return (
-    <ScreenScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <Screen>
+      <SettingsSearchHeader />
+      <ScreenScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 12 }}>
       {visibleSettings.length === 0 ? (
         <Text>No matching settings.</Text>
       ) : (
@@ -68,6 +70,7 @@ export default function SettingsScreen() {
           ))}
         </View>
       )}
-    </ScreenScrollView>
+      </ScreenScrollView>
+    </Screen>
   );
 }
