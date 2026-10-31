@@ -1,5 +1,6 @@
 export { DATABASE_NAME, db, sqlite } from './client';
 export {
+  enrichCatalogMetadataIfNeeded,
   resetAndSeedCatalog,
   seedCatalog,
   seedCatalogIfEmpty,

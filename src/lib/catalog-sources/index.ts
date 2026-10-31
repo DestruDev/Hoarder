@@ -14,14 +14,34 @@ function catalogKey(item: Pick<NewCatalogItem, 'title' | 'mediaType'>): string {
   return `${item.mediaType}:${item.title.trim().toLowerCase()}`;
 }
 
+function firstDefined<T>(current: T | null | undefined, incoming: T | null | undefined): T | null | undefined {
+  return current ?? incoming;
+}
+
+function mergeCatalogItem(current: NewCatalogItem, incoming: NewCatalogItem): NewCatalogItem {
+  return {
+    ...current,
+    coverImageUrl: firstDefined(current.coverImageUrl, incoming.coverImageUrl) ?? null,
+    releaseStatus: firstDefined(current.releaseStatus, incoming.releaseStatus),
+    mangaOrigin: firstDefined(current.mangaOrigin, incoming.mangaOrigin),
+    totalEpisodes: firstDefined(current.totalEpisodes, incoming.totalEpisodes),
+    totalPages: firstDefined(current.totalPages, incoming.totalPages),
+    totalChapters: firstDefined(current.totalChapters, incoming.totalChapters),
+    globalRating: firstDefined(current.globalRating, incoming.globalRating),
+    season: firstDefined(current.season, incoming.season),
+    genres: firstDefined(current.genres, incoming.genres),
+    creator: firstDefined(current.creator, incoming.creator),
+    synopsis: firstDefined(current.synopsis, incoming.synopsis),
+  };
+}
+
 export function dedupeCatalogItems(items: NewCatalogItem[]): NewCatalogItem[] {
   const byKey = new Map<string, NewCatalogItem>();
 
   for (const item of items) {
     const key = catalogKey(item);
-    if (!byKey.has(key)) {
-      byKey.set(key, item);
-    }
+    const existing = byKey.get(key);
+    byKey.set(key, existing ? mergeCatalogItem(existing, item) : item);
   }
 
   return [...byKey.values()];

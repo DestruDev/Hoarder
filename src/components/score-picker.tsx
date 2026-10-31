@@ -7,10 +7,12 @@ import { Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import type { RatingSystem } from '@/lib/db';
 
-const ITEM_HEIGHT = 44;
+const ITEM_HEIGHT = 52;
 const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const SIDE_PADDING = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
+
+export type WheelOption<T> = { value: T; label: string; key: string };
 
 function buildScores(ratingSystem: RatingSystem): Array<number | null> {
   const scores: Array<number | null> = [null];
@@ -39,11 +41,6 @@ function scoreEquals(left: number | null, right: number | null, ratingSystem: Ra
   return Math.round(left * 10) === Math.round(right * 10);
 }
 
-function scoreIndex(scores: Array<number | null>, value: number | null, ratingSystem: RatingSystem): number {
-  const index = scores.findIndex((score) => scoreEquals(score, value, ratingSystem));
-  return index < 0 ? 0 : index;
-}
-
 function labelFor(score: number | null, ratingSystem: RatingSystem): string {
   if (score == null) {
     return 'Unscored';
@@ -57,17 +54,25 @@ function indexFromOffset(offsetY: number, length: number): number {
   return Math.min(length - 1, Math.max(0, index));
 }
 
-export function ScorePicker({
+export function WheelPicker<T>({
+  options,
   value,
   onChange,
+  isEqual = (left, right) => left === right,
+  fontSize = 26,
 }: {
-  value: number | null;
-  onChange: (score: number | null) => void;
+  options: WheelOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  isEqual?: (left: T, right: T) => boolean;
+  fontSize?: number;
 }) {
-  const { ratingSystem } = useAppSettings();
-  const scores = useMemo(() => buildScores(ratingSystem), [ratingSystem]);
   const listRef = useRef<ScrollView>(null);
-  const initialOffset = useRef(scoreIndex(scores, value, ratingSystem) * ITEM_HEIGHT).current;
+  const initialIndex = Math.max(
+    0,
+    options.findIndex((option) => isEqual(option.value, value)),
+  );
+  const initialOffset = useRef(initialIndex * ITEM_HEIGHT).current;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -78,7 +83,10 @@ export function ScorePicker({
   }, [initialOffset]);
 
   function commitOffset(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    onChange(scores[indexFromOffset(event.nativeEvent.contentOffset.y, scores.length)] ?? null);
+    const option = options[indexFromOffset(event.nativeEvent.contentOffset.y, options.length)];
+    if (option) {
+      onChange(option.value);
+    }
   }
 
   return (
@@ -110,14 +118,14 @@ export function ScorePicker({
         onScrollEndDrag={commitOffset}
         style={{ backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingVertical: SIDE_PADDING }}>
-        {scores.map((score, index) => {
-          const selected = scoreEquals(score, value, ratingSystem);
+        {options.map((option, index) => {
+          const selected = isEqual(option.value, value);
 
           return (
             <Pressable
-              key={score == null ? 'unscored' : String(score)}
+              key={option.key}
               onPress={() => {
-                onChange(score);
+                onChange(option.value);
                 listRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
               }}
               style={{
@@ -125,14 +133,42 @@ export function ScorePicker({
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-              <Text style={{ color: selected ? colors.text : colors.textMuted, fontSize: 18 }}>
-                {labelFor(score, ratingSystem)}
+              <Text style={{ color: selected ? colors.text : colors.textMuted, fontSize }}>
+                {option.label}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
     </View>
+  );
+}
+
+export function ScorePicker({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (score: number | null) => void;
+}) {
+  const { ratingSystem } = useAppSettings();
+  const options = useMemo(
+    () =>
+      buildScores(ratingSystem).map((score) => ({
+        value: score,
+        label: labelFor(score, ratingSystem),
+        key: score == null ? 'unscored' : String(score),
+      })),
+    [ratingSystem],
+  );
+
+  return (
+    <WheelPicker
+      options={options}
+      value={value}
+      onChange={onChange}
+      isEqual={(left, right) => scoreEquals(left, right, ratingSystem)}
+    />
   );
 }
 

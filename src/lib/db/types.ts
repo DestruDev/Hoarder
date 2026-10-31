@@ -121,18 +121,15 @@ export type CatalogItem = {
   totalEpisodes: number | null;
   totalPages: number | null;
   totalChapters: number | null;
+  globalRating: number | null;
+  season: string | null;
+  genres: string | null;
+  creator: string | null;
+  synopsis: string | null;
 };
 
-export type NewCatalogItem = Omit<
-  CatalogItem,
-  'id' | 'releaseStatus' | 'mangaOrigin' | 'totalEpisodes' | 'totalPages' | 'totalChapters'
-> & {
-  releaseStatus?: ReleaseStatus | null;
-  mangaOrigin?: ComicOrigin | null;
-  totalEpisodes?: number | null;
-  totalPages?: number | null;
-  totalChapters?: number | null;
-};
+export type NewCatalogItem = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'> &
+  Partial<Omit<CatalogItem, 'id' | 'title' | 'mediaType' | 'coverImageUrl'>>;
 
 export const FEED_KINDS = ['media', 'friend'] as const;
 

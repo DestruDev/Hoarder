@@ -17,7 +17,7 @@ import {
   type ItemStatus,
 } from '@/lib/db';
 import { useAppSettings } from '@/components/app-settings';
-import { ScorePicker } from '@/components/score-picker';
+import { ScorePicker, WheelPicker } from '@/components/score-picker';
 import { STATUS_LABELS } from '@/lib/status-labels';
 
 type QuickEdit = 'status' | 'progress' | 'score';
@@ -93,6 +93,41 @@ function QuickButton({ label, onPress }: { label: string; onPress: () => void })
   );
 }
 
+const STATUS_OPTIONS = ITEM_STATUSES.map((status) => ({
+  value: status,
+  label: STATUS_LABELS[status],
+  key: status,
+}));
+
+function StepButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: 'add' | 'remove';
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={label}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: pressed ? colors.border : colors.searchBarBackground,
+        borderColor: colors.border,
+        borderWidth: 1,
+      })}>
+      <Ionicons name={icon} size={24} color={colors.text} />
+    </Pressable>
+  );
+}
+
 export function LibraryStatusControl({
   media,
   libraryItem,
@@ -142,8 +177,15 @@ export function LibraryStatusControl({
     return '';
   }
 
+  function stepProgress(delta: number) {
+    const parsed = Number.parseInt(progress.trim(), 10);
+    const current = Number.isFinite(parsed) ? parsed : 0;
+    const max = totalProgress ?? Number.POSITIVE_INFINITY;
+    setProgress(String(Math.min(max, Math.max(0, current + delta))));
+  }
+
   function openModal(edit: QuickEdit) {
-    setSelectedStatus(libraryItem?.status ?? null);
+    setSelectedStatus(libraryItem?.status ?? 'planning');
     setSelectedScore(libraryItem?.rating ?? null);
     setProgress(currentProgressValue());
     setError(null);
@@ -221,8 +263,9 @@ export function LibraryStatusControl({
     }
   }
 
+  const progressTitle = tracksEpisodes ? 'Episodes' : tracksChapters ? 'Chapters' : tracksPages ? 'Pages' : 'Progress';
   const title =
-    open === 'progress' ? 'Progress' : open === 'score' ? 'Score' : 'Library status';
+    open === 'progress' ? progressTitle : open === 'score' ? 'Score' : 'Watch Status';
   const canSave =
     open === 'status'
       ? Boolean(selectedStatus)
@@ -284,46 +327,40 @@ export function LibraryStatusControl({
               paddingTop: 16,
               paddingBottom: Math.max(insets.bottom, 16),
               gap: 10,
+              minHeight: open === 'progress' ? 300 : undefined,
             }}>
             <Text style={{ fontSize: 18 }}>{title}</Text>
 
-            {open === 'status'
-              ? ITEM_STATUSES.map((status) => {
-                  const isSelected = selectedStatus === status;
-
-                  return (
-                    <Pressable
-                      key={status}
-                      onPress={() => setSelectedStatus(status)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: isSelected ? colors.searchBarBackground : colors.background,
-                        borderColor: isSelected ? colors.text : colors.border,
-                        borderWidth: 1,
-                        borderRadius: 10,
-                        paddingHorizontal: 14,
-                        paddingVertical: 12,
-                      }}>
-                      <Text style={{ flex: 1 }}>{STATUS_LABELS[status]}</Text>
-                      {isSelected ? <Ionicons name="checkmark" size={20} color={colors.text} /> : null}
-                    </Pressable>
-                  );
-                })
-              : null}
+            {open === 'status' && selectedStatus ? (
+              <WheelPicker
+                options={STATUS_OPTIONS}
+                value={selectedStatus}
+                onChange={setSelectedStatus}
+                fontSize={22}
+              />
+            ) : null}
 
             {open === 'progress' ? (
               tracksProgress ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 24,
+                  }}>
+                  <StepButton icon="remove" label="Subtract one" onPress={() => stepProgress(-1)} />
                   <TextInput
                     value={progress}
                     onChangeText={setProgress}
                     placeholder={tracksEpisodes ? 'watched' : 'read'}
                     keyboardType="number-pad"
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, fontSize: 22, paddingVertical: 16, textAlign: 'center' }}
                   />
-                  <Text style={{ color: colors.textMuted }}>/</Text>
-                  <Text style={{ minWidth: 40 }}>{totalProgress ?? '—'}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 22 }}>/</Text>
+                  <Text style={{ minWidth: 48, fontSize: 22 }}>{totalProgress ?? '—'}</Text>
+                  <StepButton icon="add" label="Add one" onPress={() => stepProgress(1)} />
                 </View>
               ) : (
                 <Text style={{ color: colors.textMuted }}>No progress tracking for this type.</Text>

@@ -68,35 +68,28 @@ export async function upsertCatalogItems(entries: NewCatalogItem[]): Promise<Cat
       continue;
     }
 
-    const coverImageUrl = entry.coverImageUrl ?? found.coverImageUrl;
-    const releaseStatus = entry.releaseStatus ?? found.releaseStatus;
-    const mangaOrigin = entry.mangaOrigin ?? found.mangaOrigin;
-    const totalEpisodes = entry.totalEpisodes ?? found.totalEpisodes;
-    const totalPages = entry.totalPages ?? found.totalPages;
-    const totalChapters = entry.totalChapters ?? found.totalChapters;
+    const next = {
+      coverImageUrl: entry.coverImageUrl ?? found.coverImageUrl,
+      releaseStatus: entry.releaseStatus ?? found.releaseStatus,
+      mangaOrigin: entry.mangaOrigin ?? found.mangaOrigin,
+      totalEpisodes: entry.totalEpisodes ?? found.totalEpisodes,
+      totalPages: entry.totalPages ?? found.totalPages,
+      totalChapters: entry.totalChapters ?? found.totalChapters,
+      globalRating: entry.globalRating ?? found.globalRating,
+      season: entry.season ?? found.season,
+      genres: entry.genres ?? found.genres,
+      creator: entry.creator ?? found.creator,
+      synopsis: entry.synopsis ?? found.synopsis,
+    };
 
-    if (
-      coverImageUrl === found.coverImageUrl &&
-      releaseStatus === found.releaseStatus &&
-      mangaOrigin === found.mangaOrigin &&
-      totalEpisodes === found.totalEpisodes &&
-      totalPages === found.totalPages &&
-      totalChapters === found.totalChapters
-    ) {
+    const changed = (Object.keys(next) as Array<keyof typeof next>).some(
+      (key) => next[key] !== found[key],
+    );
+    if (!changed) {
       continue;
     }
 
-    await db
-      .update(catalog)
-      .set({
-        coverImageUrl,
-        releaseStatus,
-        mangaOrigin,
-        totalEpisodes,
-        totalPages,
-        totalChapters,
-      })
-      .where(eq(catalog.id, found.id));
+    await db.update(catalog).set(next).where(eq(catalog.id, found.id));
   }
 
   await insertCatalogItems(toInsert);

@@ -2,6 +2,8 @@ import { SAMPLE_CATALOG } from '@/lib/db/catalog-data';
 import type { NewCatalogItem } from '@/lib/db/types';
 
 import { fetchJson, mapInBatches } from './http';
+import { cleanSynopsis, joinGenres, seasonFromIsoDate } from './metadata';
+import { scoreOutOfTen } from './rating';
 
 const EXTRA_COMICS = [
   'Batman Year One',
@@ -32,6 +34,10 @@ type ItunesRssImage = {
 type ItunesRssEntry = {
   'im:name'?: { label?: string };
   'im:image'?: ItunesRssImage[];
+  'im:artist'?: { label?: string };
+  'im:releaseDate'?: { label?: string };
+  category?: { attributes?: { label?: string } };
+  summary?: { label?: string };
 };
 
 type ItunesRssFeed = {
@@ -45,6 +51,12 @@ type ItunesSearchResult = {
   collectionName?: string | null;
   artworkUrl100?: string | null;
   genres?: string[] | null;
+  primaryGenreName?: string | null;
+  averageUserRating?: number | null;
+  artistName?: string | null;
+  releaseDate?: string | null;
+  description?: string | null;
+  longDescription?: string | null;
 };
 
 type ItunesSearch = {
@@ -96,6 +108,22 @@ function mapFeedEntry(entry: ItunesRssEntry, mediaType: 'book' | 'movie'): NewCa
     title,
     mediaType,
     coverImageUrl,
+    season: seasonFromIsoDate(entry['im:releaseDate']?.label),
+    genres: joinGenres([entry.category?.attributes?.label]),
+    creator: entry['im:artist']?.label?.trim() || null,
+    synopsis: cleanSynopsis(entry.summary?.label),
+  };
+}
+
+function searchMetadata(result: ItunesSearchResult): Partial<NewCatalogItem> {
+  return {
+    season: seasonFromIsoDate(result.releaseDate),
+    genres: joinGenres([
+      ...(result.genres ?? []).filter((genre) => !/^(books|ebooks)$/i.test(genre)),
+      result.primaryGenreName,
+    ]),
+    creator: result.artistName?.trim() || null,
+    synopsis: cleanSynopsis(result.longDescription ?? result.description),
   };
 }
 
@@ -135,7 +163,7 @@ async function searchComic(title: string): Promise<NewCatalogItem | null> {
   const coverImageUrl = itunesArtwork(match?.artworkUrl100);
   const matchedTitle = match?.trackName?.trim() || match?.collectionName?.trim();
 
-  if (!matchedTitle || !coverImageUrl) {
+  if (!match || !matchedTitle || !coverImageUrl) {
     return null;
   }
 
@@ -144,6 +172,8 @@ async function searchComic(title: string): Promise<NewCatalogItem | null> {
     mediaType: 'comic',
     coverImageUrl,
     mangaOrigin: 'american',
+    globalRating: scoreOutOfTen(match.averageUserRating, 5),
+    ...searchMetadata(match),
   };
 }
 
@@ -158,16 +188,21 @@ export async function fetchItunesComics(): Promise<NewCatalogItem[]> {
   return mapInBatches(titles, 3, searchComic);
 }
 
-export async function lookupItunesMovieCover(title: string): Promise<string | null> {
+async function lookupItunesMovie(title: string): Promise<ItunesSearchResult | undefined> {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=movie&limit=1`;
   const payload = (await fetchJson(url)) as ItunesSearch;
-  const match = payload.results?.find((result) => result.artworkUrl100);
+  return payload.results?.find((result) => result.artworkUrl100);
+}
+
+export async function lookupItunesMovieCover(title: string): Promise<string | null> {
+  const match = await lookupItunesMovie(title);
   return itunesArtwork(match?.artworkUrl100);
 }
 
 async function searchMovie(title: string): Promise<NewCatalogItem | null> {
-  const coverImageUrl = await lookupItunesMovieCover(title);
-  if (!coverImageUrl) {
+  const match = await lookupItunesMovie(title);
+  const coverImageUrl = itunesArtwork(match?.artworkUrl100);
+  if (!match || !coverImageUrl) {
     return null;
   }
 
@@ -175,6 +210,7 @@ async function searchMovie(title: string): Promise<NewCatalogItem | null> {
     title,
     mediaType: 'movie',
     coverImageUrl,
+    ...searchMetadata(match),
   };
 }
 

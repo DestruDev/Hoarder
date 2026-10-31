@@ -46,6 +46,11 @@ export const catalog = sqliteTable('catalog', {
   totalEpisodes: integer('total_episodes'),
   totalPages: integer('total_pages'),
   totalChapters: integer('total_chapters'),
+  globalRating: real('global_rating'),
+  season: text('season'),
+  genres: text('genres'),
+  creator: text('creator'),
+  synopsis: text('synopsis'),
 });
 
 export const feedNotifications = sqliteTable('feed_notifications', {

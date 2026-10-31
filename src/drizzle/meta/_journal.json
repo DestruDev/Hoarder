@@ -134,6 +134,20 @@
       "when": 1793347086164,
       "tag": "0018_strong_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1793418000000,
+      "tag": "0019_catalog_global_rating",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1793421600000,
+      "tag": "0020_catalog_media_info",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { Screen, Text } from '@/components/themed';
 import {
   findCatalogItemByTitleAndType,
   getItemById,
+  type CatalogItem,
   type Item,
 } from '@/lib/db';
 
@@ -23,6 +24,9 @@ export default function ItemDetailScreen() {
   const [totalEpisodes, setTotalEpisodes] = useState<Item['totalEpisodes']>(null);
   const [totalPages, setTotalPages] = useState<Item['totalPages']>(null);
   const [totalChapters, setTotalChapters] = useState<Item['totalChapters']>(null);
+  const [catalogInfo, setCatalogInfo] = useState<
+    Pick<CatalogItem, 'globalRating' | 'season' | 'genres' | 'creator' | 'synopsis'>
+  >({ globalRating: null, season: null, genres: null, creator: null, synopsis: null });
 
   useFocusEffect(
     useCallback(() => {
@@ -52,6 +56,13 @@ export default function ItemDetailScreen() {
               setTotalEpisodes(catalogItem?.totalEpisodes ?? row.totalEpisodes ?? null);
               setTotalPages(row.totalPages ?? catalogItem?.totalPages ?? null);
               setTotalChapters(row.totalChapters ?? catalogItem?.totalChapters ?? null);
+              setCatalogInfo({
+                globalRating: catalogItem?.globalRating ?? null,
+                season: catalogItem?.season ?? null,
+                genres: catalogItem?.genres ?? null,
+                creator: catalogItem?.creator ?? null,
+                synopsis: catalogItem?.synopsis ?? null,
+              });
             }
           }
         })
@@ -110,6 +121,7 @@ export default function ItemDetailScreen() {
         totalEpisodes,
         totalPages,
         totalChapters,
+        ...catalogInfo,
       }}
       libraryItem={item}
       onLibraryItemChange={(next) => {

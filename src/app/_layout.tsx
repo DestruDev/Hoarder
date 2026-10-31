@@ -9,7 +9,7 @@ import { AppSettingsProvider } from '@/components/app-settings';
 import { Screen, Text } from '@/components/themed';
 import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
-import { db, seedCatalogIfEmpty, seedFeedIfEmpty } from '@/lib/db';
+import { db, enrichCatalogMetadataIfNeeded, seedCatalogIfEmpty, seedFeedIfEmpty } from '@/lib/db';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,7 +33,12 @@ export default function RootLayout() {
       })
       .finally(() => {
         SplashScreen.hideAsync();
-      });
+      })
+      .then(() =>
+        enrichCatalogMetadataIfNeeded().catch((enrichError: unknown) => {
+          console.warn('[Hoarder DB] Catalog metadata enrich failed:', enrichError);
+        }),
+      );
   }, [success, error]);
 
   if (error) {

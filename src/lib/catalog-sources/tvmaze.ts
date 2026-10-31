@@ -2,6 +2,8 @@ import { SAMPLE_CATALOG } from '@/lib/db/catalog-data';
 import type { NewCatalogItem, ReleaseStatus } from '@/lib/db/types';
 
 import { fetchJson, mapInBatches } from './http';
+import { cleanSynopsis, joinGenres, seasonFromIsoDate } from './metadata';
+import { scoreOutOfTen } from './rating';
 
 const EXTRA_TITLES = [
   'Breaking Bad',
@@ -46,17 +48,29 @@ const EXTRA_TITLES = [
   'The Expanse',
 ];
 
+type TvmazeSeason = {
+  number?: number | null;
+  episodeOrder?: number | null;
+};
+
 type TvmazeShow = {
   name?: string | null;
   status?: string | null;
+  premiered?: string | null;
+  genres?: string[] | null;
+  summary?: string | null;
+  network?: { name?: string | null } | null;
+  webChannel?: { name?: string | null } | null;
+  rating?: {
+    average?: number | null;
+  } | null;
   image?: {
     original?: string | null;
     medium?: string | null;
   } | null;
-};
-
-type TvmazeSearchResult = {
-  show?: TvmazeShow | null;
+  _embedded?: {
+    seasons?: TvmazeSeason[] | null;
+  } | null;
 };
 
 function sampleTvTitles(): string[] {
@@ -94,11 +108,35 @@ function mapReleaseStatus(status: string | null | undefined): ReleaseStatus | nu
   }
 }
 
+function countEpisodes(seasons: TvmazeSeason[] | null | undefined): number | null {
+  if (!seasons?.length) {
+    return null;
+  }
+
+  let total = 0;
+  let counted = false;
+
+  for (const season of seasons) {
+    if (season.number == null || season.number < 1) {
+      continue;
+    }
+
+    if (season.episodeOrder == null || season.episodeOrder < 0) {
+      continue;
+    }
+
+    total += season.episodeOrder;
+    counted = true;
+  }
+
+  return counted ? total : null;
+}
+
 function mapShow(show: TvmazeShow | null | undefined): NewCatalogItem | null {
   const title = show?.name?.trim();
   const coverImageUrl = show?.image?.original || show?.image?.medium || null;
 
-  if (!title || !coverImageUrl) {
+  if (!show || !title || !coverImageUrl) {
     return null;
   }
 
@@ -107,14 +145,23 @@ function mapShow(show: TvmazeShow | null | undefined): NewCatalogItem | null {
     mediaType: 'tv',
     coverImageUrl,
     releaseStatus: mapReleaseStatus(show?.status),
+    totalEpisodes: countEpisodes(show._embedded?.seasons),
+    globalRating: scoreOutOfTen(show.rating?.average),
+    season: seasonFromIsoDate(show.premiered),
+    genres: joinGenres(show.genres),
+    creator: show.network?.name?.trim() || show.webChannel?.name?.trim() || null,
+    synopsis: cleanSynopsis(show.summary),
   };
 }
 
 async function searchShow(title: string): Promise<NewCatalogItem | null> {
-  const url = `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`;
-  const results = (await fetchJson(url)) as TvmazeSearchResult[];
-  const withCover = results.find((result) => mapShow(result.show));
-  return mapShow(withCover?.show);
+  try {
+    const url = `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(title)}&embed=seasons`;
+    const show = (await fetchJson(url)) as TvmazeShow;
+    return mapShow(show);
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchTvmazeCatalog(): Promise<NewCatalogItem[]> {

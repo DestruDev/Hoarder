@@ -3,6 +3,8 @@ import type { ComicOrigin, NewCatalogItem, ReleaseStatus } from '@/lib/db/types'
 import { CATALOG_SECTION_LIMIT } from '@/lib/catalog-sections';
 
 import { fetchJson } from './http';
+import { cleanSynopsis, joinGenres, joinNames, seasonLabel } from './metadata';
+import { scoreOutOfTen } from './rating';
 
 const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
 const SKIP_FORMATS = new Set(['MUSIC', 'NOVEL']);
@@ -20,6 +22,15 @@ const MEDIA_FIELDS = `
       countryOfOrigin
       episodes
       chapters
+      averageScore
+      season
+      seasonYear
+      startDate {
+        year
+        month
+      }
+      genres
+      description(asHtml: false)
       coverImage {
         large
       }
@@ -30,6 +41,11 @@ query ($page: Int, $perPage: Int) {
   Page(page: $page, perPage: $perPage) {
     media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
       ${MEDIA_FIELDS}
+      studios(isMain: true) {
+        nodes {
+          name
+        }
+      }
     }
   }
 }
@@ -40,6 +56,16 @@ query ($page: Int, $perPage: Int, $country: CountryCode) {
   Page(page: $page, perPage: $perPage) {
     media(type: MANGA, sort: POPULARITY_DESC, isAdult: false, countryOfOrigin: $country) {
       ${MEDIA_FIELDS}
+      staff(perPage: 6, sort: [RELEVANCE]) {
+        edges {
+          role
+          node {
+            name {
+              full
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -58,10 +84,64 @@ type AnilistMedia = {
   countryOfOrigin?: string | null;
   episodes?: number | null;
   chapters?: number | null;
+  averageScore?: number | null;
+  season?: string | null;
+  seasonYear?: number | null;
+  startDate?: {
+    year?: number | null;
+    month?: number | null;
+  } | null;
+  genres?: string[] | null;
+  description?: string | null;
   coverImage?: {
     large?: string | null;
   } | null;
+  studios?: {
+    nodes?: Array<{ name?: string | null } | null> | null;
+  } | null;
+  staff?: {
+    edges?: Array<{
+      role?: string | null;
+      node?: { name?: { full?: string | null } | null } | null;
+    } | null> | null;
+  } | null;
 };
+
+const AUTHOR_ROLES = [/^original (story|creator)/i, /^story & art/i, /^story/i];
+
+const ANILIST_SEASONS: Record<string, string> = {
+  WINTER: 'Winter',
+  SPRING: 'Spring',
+  SUMMER: 'Summer',
+  FALL: 'Fall',
+};
+
+function mapSeason(media: AnilistMedia): string | null {
+  const season = media.season ? ANILIST_SEASONS[media.season] : undefined;
+  if (season && media.seasonYear) {
+    return `${season} ${media.seasonYear}`;
+  }
+
+  return seasonLabel(media.startDate?.year, media.startDate?.month);
+}
+
+function mapAuthor(media: AnilistMedia): string | null {
+  const edges = media.staff?.edges ?? [];
+
+  for (const pattern of AUTHOR_ROLES) {
+    const match = edges.find((edge) => edge?.role && pattern.test(edge.role));
+    const name = match?.node?.name?.full?.trim();
+    if (name) {
+      return name;
+    }
+  }
+
+  return edges[0]?.node?.name?.full?.trim() || null;
+}
+
+function mapCreator(media: AnilistMedia): string | null {
+  return joinNames(media.studios?.nodes?.map((node) => node?.name)) ?? mapAuthor(media);
+}
 
 type AnilistResponse = {
   data?: {
@@ -124,6 +204,11 @@ function mapMedia(media: AnilistMedia, mediaType: 'anime' | 'comic'): NewCatalog
     mangaOrigin: mediaType === 'comic' ? mapComicOrigin(media.countryOfOrigin) ?? 'japanese' : null,
     totalEpisodes: mediaType === 'anime' ? media.episodes ?? null : null,
     totalChapters: mediaType === 'comic' ? media.chapters ?? null : null,
+    globalRating: scoreOutOfTen(media.averageScore, 100),
+    season: mapSeason(media),
+    genres: joinGenres(media.genres),
+    creator: mapCreator(media),
+    synopsis: cleanSynopsis(media.description),
   };
 }
 

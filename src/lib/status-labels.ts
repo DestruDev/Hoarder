@@ -162,6 +162,23 @@ export function libraryCountLabel(
   return mediaTypeLabel(mediaType, mangaOrigin);
 }
 
+export function creatorLabel(mediaType: MediaType): string {
+  switch (mediaType) {
+    case 'anime':
+    case 'movie':
+      return 'Studio';
+    case 'tv':
+      return 'Network';
+    case 'game':
+      return 'Developer';
+    case 'book':
+    case 'comic':
+      return 'Author';
+    default:
+      return 'Creator';
+  }
+}
+
 export function formatScore(rating: number, ratingSystem: RatingSystem = 'decimal'): string {
   if (ratingSystem === 'whole') {
     return String(Math.round(rating));
