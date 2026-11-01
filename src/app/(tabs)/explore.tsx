@@ -1,13 +1,14 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { memo, useCallback, useDeferredValue, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { FlatList, Pressable, SectionList, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaRow } from '@/components/media-cover';
 import { ExploreSearchHeader, useMediaQuery } from '@/components/media-search';
-import { Screen, ScreenScrollView, Text } from '@/components/themed';
+import { Screen, Text } from '@/components/themed';
+import { colors } from '@/constants/theme';
 import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
-import { getCatalogItems, type CatalogItem, type CollectionView } from '@/lib/db';
+import { getCatalogItems, peekCatalogItems, type CatalogItem, type CollectionView } from '@/lib/db';
 import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
 import { mediaTypeLabel } from '@/lib/status-labels';
 
@@ -39,7 +40,7 @@ export default function ExploreScreen() {
   const { query, filter } = useMediaQuery();
   const deferredQuery = useDeferredValue(query);
   const { exploreView } = useAppSettings();
-  const [items, setItems] = useState<CatalogItem[]>([]);
+  const [items, setItems] = useState<CatalogItem[] | null>(() => peekCatalogItems());
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
@@ -66,7 +67,7 @@ export default function ExploreScreen() {
   );
 
   const sections = useMemo(() => {
-    const visibleItems = items.filter(
+    const visibleItems = (items ?? []).filter(
       (item) => matchesMediaName(item.title, deferredQuery) && matchesMediaTypeFilter(item, filter),
     );
 
@@ -88,42 +89,94 @@ export default function ExploreScreen() {
     })).filter((section) => section.items.length > 0);
   }, [deferredQuery, filter, items]);
 
+  const emptyState = (
+    <View style={{ gap: 8 }}>
+      {error ? <Text>{error}</Text> : null}
+      <Text>
+        {items == null
+          ? 'Loading…'
+          : items.length === 0
+            ? 'No catalog titles yet.'
+            : 'No matching titles.'}
+      </Text>
+    </View>
+  );
+
   return (
     <Screen>
       <ExploreSearchHeader />
-      <ScreenScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16, gap: 20 }}>
-        {error ? <Text>{error}</Text> : null}
-
-        {items.length === 0 ? (
-          <Text>No catalog titles yet.</Text>
-        ) : sections.length === 0 ? (
-          <Text>No matching titles.</Text>
-        ) : (
-          sections.map((section) => (
-            <View key={section.id} style={{ gap: 10 }}>
-              <Text style={{ fontSize: 18 }}>{section.title}</Text>
-              {exploreView === 'list' ? (
-                <View style={{ gap: 8 }}>
-                  {section.items.map((item) => (
-                    <ExploreEntry key={item.id} item={item} view="list" />
-                  ))}
-                </View>
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
-                  {section.items.map((item) => (
-                    <ExploreEntry key={item.id} item={item} view="card" />
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          ))
-        )}
-      </ScreenScrollView>
+      {exploreView === 'list' ? (
+        <SectionList
+          sections={sections.map((section) => ({ ...section, data: section.items }))}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => <ExploreEntry item={item} view="list" />}
+          renderSectionHeader={({ section }) => (
+            <SectionTitle title={section.title} first={section.id === sections[0]?.id} />
+          )}
+          ItemSeparatorComponent={RowSeparator}
+          ListEmptyComponent={emptyState}
+          stickySectionHeadersEnabled={false}
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={8}
+          windowSize={7}
+          style={{ flex: 1, backgroundColor: colors.background }}
+          contentContainerStyle={{ padding: 16 }}
+        />
+      ) : (
+        <FlatList
+          data={sections}
+          keyExtractor={(section) => section.id}
+          renderItem={({ item: section }) => <PosterSection section={section} />}
+          ItemSeparatorComponent={SectionSeparator}
+          ListEmptyComponent={emptyState}
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={4}
+          windowSize={5}
+          style={{ flex: 1, backgroundColor: colors.background }}
+          contentContainerStyle={{ padding: 16 }}
+        />
+      )}
     </Screen>
   );
 }
+
+type ExploreSection = (typeof CATALOG_SECTIONS)[number] & { items: CatalogItem[] };
+
+const POSTER_STRIDE = 120 + 12;
+
+function SectionTitle({ title, first }: { title: string; first: boolean }) {
+  return <Text style={{ fontSize: 18, marginTop: first ? 0 : 20, marginBottom: 10 }}>{title}</Text>;
+}
+
+function RowSeparator() {
+  return <View style={{ height: 8 }} />;
+}
+
+function SectionSeparator() {
+  return <View style={{ height: 20 }} />;
+}
+
+function PosterSeparator() {
+  return <View style={{ width: 12 }} />;
+}
+
+const PosterSection = memo(function PosterSection({ section }: { section: ExploreSection }) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={{ fontSize: 18 }}>{section.title}</Text>
+      <FlatList
+        horizontal
+        data={section.items}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <ExploreEntry item={item} view="card" />}
+        ItemSeparatorComponent={PosterSeparator}
+        getItemLayout={(_, index) => ({ length: POSTER_STRIDE, offset: POSTER_STRIDE * index, index })}
+        showsHorizontalScrollIndicator={false}
+        initialNumToRender={4}
+        maxToRenderPerBatch={6}
+        windowSize={3}
+        contentContainerStyle={{ paddingRight: 4 }}
+      />
+    </View>
+  );
+});

@@ -1,20 +1,68 @@
 import { ThemeProvider } from '@react-navigation/native';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 
 import { AppSettingsProvider } from '@/components/app-settings';
 import { Screen, Text } from '@/components/themed';
 import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
-import { db, enrichCatalogMetadataIfNeeded, seedCatalogIfEmpty, seedFeedIfEmpty } from '@/lib/db';
+import { catalogSectionKey } from '@/lib/catalog-sections';
+import {
+  db,
+  enrichCatalogMetadataIfNeeded,
+  getCatalogItems,
+  seedCatalogIfEmpty,
+  seedFeedIfEmpty,
+  type CatalogItem,
+  type SeedProgress,
+} from '@/lib/db';
 
 SplashScreen.preventAutoHideAsync();
 
+const PREFETCH_PER_SECTION = 6;
+
+function prefetchExploreCovers(items: CatalogItem[]) {
+  const counts = new Map<string, number>();
+  const urls: string[] = [];
+
+  for (const item of items) {
+    const key = catalogSectionKey(item);
+    const count = counts.get(key) ?? 0;
+    if (!item.coverImageUrl || count >= PREFETCH_PER_SECTION) {
+      continue;
+    }
+
+    counts.set(key, count + 1);
+    urls.push(item.coverImageUrl);
+  }
+
+  void Image.prefetch(urls, 'disk').catch(() => undefined);
+}
+
+function LoadingScreen({ progress }: { progress: SeedProgress | null }) {
+  const percent =
+    progress && progress.total > 0
+      ? Math.min(100, Math.round((progress.current / progress.total) * 100))
+      : null;
+
+  return (
+    <Screen style={{ alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 }}>
+      <ActivityIndicator size="large" color={colors.text} />
+      <Text>{progress?.label ?? 'Loading…'}</Text>
+      {percent != null ? <Text style={{ color: colors.textMuted }}>{percent}%</Text> : null}
+    </Screen>
+  );
+}
+
 export default function RootLayout() {
   const { success, error } = useMigrations(db, migrations);
+  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState<SeedProgress | null>(null);
 
   useEffect(() => {
     if (error) {
@@ -26,13 +74,20 @@ export default function RootLayout() {
       return;
     }
 
-    seedCatalogIfEmpty()
-      .then(() => seedFeedIfEmpty())
+    SplashScreen.hideAsync();
+
+    seedCatalogIfEmpty(setProgress)
+      .then(() => {
+        setProgress({ label: 'Preparing feed…', current: 0, total: 0 });
+        return seedFeedIfEmpty();
+      })
+      .then(() => getCatalogItems())
+      .then(prefetchExploreCovers)
       .catch((seedError) => {
         console.error('[Hoarder DB] Catalog seed failed:', seedError);
       })
       .finally(() => {
-        SplashScreen.hideAsync();
+        setReady(true);
       })
       .then(() =>
         enrichCatalogMetadataIfNeeded().catch((enrichError: unknown) => {
@@ -51,11 +106,11 @@ export default function RootLayout() {
   }
 
   if (!success) {
-    return (
-      <Screen style={{ justifyContent: 'center', padding: 24 }}>
-        <Text>Preparing database...</Text>
-      </Screen>
-    );
+    return <LoadingScreen progress={{ label: 'Preparing database…', current: 0, total: 0 }} />;
+  }
+
+  if (!ready) {
+    return <LoadingScreen progress={progress} />;
   }
 
   return (

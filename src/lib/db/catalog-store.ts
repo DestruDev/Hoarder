@@ -26,12 +26,20 @@ export async function insertCatalogItems(entries: NewCatalogItem[]): Promise<Cat
   return saved;
 }
 
+let cachedCatalog: CatalogItem[] | null = null;
+
+export function peekCatalogItems(): CatalogItem[] | null {
+  return cachedCatalog;
+}
+
 export async function getCatalogItems(mediaType?: MediaType): Promise<CatalogItem[]> {
   if (mediaType) {
     return db.select().from(catalog).where(eq(catalog.mediaType, mediaType));
   }
 
-  return db.select().from(catalog);
+  const rows = await db.select().from(catalog);
+  cachedCatalog = rows;
+  return rows;
 }
 
 export async function getCatalogItemById(id: number): Promise<CatalogItem | undefined> {

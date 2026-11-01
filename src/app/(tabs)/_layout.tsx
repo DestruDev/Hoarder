@@ -54,6 +54,7 @@ export default function TabLayout() {
             options={{
               title: 'Explore',
               headerShown: false,
+              lazy: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons name={focused ? 'compass' : 'compass-outline'} size={size} color={color} />
               ),

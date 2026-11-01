@@ -14,6 +14,7 @@ export {
   getCatalogItemById,
   getCatalogItems,
   insertCatalogItems,
+  peekCatalogItems,
   pruneCoverlessCatalogItems,
   upsertCatalogItems,
 } from './catalog-store';
