@@ -5,7 +5,7 @@ import { Animated, Easing, Pressable, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/components/media-cover';
-import { LibrarySearchHeader, useMediaSearch } from '@/components/media-search';
+import { LibrarySearchHeader, useMediaQuery } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
@@ -14,7 +14,7 @@ import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
-  const { query, filter } = useMediaSearch();
+  const { query, filter } = useMediaQuery();
   const { libraryView } = useAppSettings();
   const { posterWidth, posterHeight } = usePosterSize();
   const [items, setItems] = useState<Item[]>([]);

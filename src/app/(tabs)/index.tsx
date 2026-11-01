@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { MediaCover } from '@/components/media-cover';
-import { FeedHeader, useMediaSearch } from '@/components/media-search';
+import { FeedHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import {
@@ -49,7 +49,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function FeedScreen() {
-  const { feedFilter } = useMediaSearch();
+  const { feedFilter } = useMediaQuery();
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [feedItems, setFeedItems] = useState<FeedNotification[]>([]);
 

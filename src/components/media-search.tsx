@@ -41,22 +41,23 @@ type MediaSearchContextValue = {
   openFilter: () => void;
 };
 
-const MediaSearchContext = createContext<MediaSearchContextValue | null>(null);
+type MediaQueryContextValue = Pick<MediaSearchContextValue, 'query' | 'filter' | 'feedFilter'>;
 
-export function MediaSearchProvider({
-  value,
-  children,
-}: {
-  value: MediaSearchContextValue;
-  children: ReactNode;
-}) {
-  return <MediaSearchContext.Provider value={value}>{children}</MediaSearchContext.Provider>;
-}
+const MediaSearchContext = createContext<MediaSearchContextValue | null>(null);
+const MediaQueryContext = createContext<MediaQueryContextValue | null>(null);
 
 export function useMediaSearch() {
   const value = useContext(MediaSearchContext);
   if (!value) {
-    throw new Error('useMediaSearch must be used within MediaSearchProvider');
+    throw new Error('useMediaSearch must be used within MediaSearchRoot');
+  }
+  return value;
+}
+
+export function useMediaQuery() {
+  const value = useContext(MediaQueryContext);
+  if (!value) {
+    throw new Error('useMediaQuery must be used within MediaSearchRoot');
   }
   return value;
 }
@@ -127,14 +128,20 @@ export function MediaSearchRoot({ children }: { children: ReactNode }) {
     }),
     [closeSearch, feedFilter, filter, isSearching, openFilter, openSearch, query],
   );
+  const queryValue = useMemo(
+    () => ({ query, filter, feedFilter }),
+    [feedFilter, filter, query],
+  );
 
   return (
-    <MediaSearchProvider value={value}>
-      <View style={{ flex: 1 }}>
-        {children}
-        <HeaderFilterMenu visible={filterOpen} onClose={() => setFilterOpen(false)} />
-      </View>
-    </MediaSearchProvider>
+    <MediaSearchContext.Provider value={value}>
+      <MediaQueryContext.Provider value={queryValue}>
+        <View style={{ flex: 1 }}>
+          {children}
+          <HeaderFilterMenu visible={filterOpen} onClose={() => setFilterOpen(false)} />
+        </View>
+      </MediaQueryContext.Provider>
+    </MediaSearchContext.Provider>
   );
 }
 

@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { SettingsSearchHeader, useMediaSearch } from '@/components/media-search';
+import { SettingsSearchHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { matchesSearchText } from '@/lib/media-search';
@@ -15,7 +15,7 @@ type SettingItem = {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { query } = useMediaSearch();
+  const { query } = useMediaQuery();
 
   const settings: SettingItem[] = [
     {
