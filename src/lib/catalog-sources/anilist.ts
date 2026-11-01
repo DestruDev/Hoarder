@@ -3,7 +3,7 @@ import type { ComicOrigin, NewCatalogItem, ReleaseStatus } from '@/lib/db/types'
 import { CATALOG_SECTION_LIMIT } from '@/lib/catalog-sections';
 
 import { fetchJson } from './http';
-import { cleanSynopsis, joinGenres, joinNames, seasonLabel } from './metadata';
+import { cleanSynopsis, isoDateFromParts, joinGenres, joinNames, seasonLabel } from './metadata';
 import { scoreOutOfTen } from './rating';
 
 const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
@@ -28,6 +28,7 @@ const MEDIA_FIELDS = `
       startDate {
         year
         month
+        day
       }
       genres
       description(asHtml: false)
@@ -90,6 +91,7 @@ type AnilistMedia = {
   startDate?: {
     year?: number | null;
     month?: number | null;
+    day?: number | null;
   } | null;
   genres?: string[] | null;
   description?: string | null;
@@ -160,8 +162,9 @@ function pickTitle(title: AnilistTitle | null | undefined): string | null {
 function mapReleaseStatus(status: string | null | undefined): ReleaseStatus | null {
   switch (status) {
     case 'FINISHED':
-    case 'CANCELLED':
       return 'released';
+    case 'CANCELLED':
+      return 'cancelled';
     case 'RELEASING':
     case 'HIATUS':
       return 'releasing';
@@ -206,6 +209,7 @@ function mapMedia(media: AnilistMedia, mediaType: 'anime' | 'comic'): NewCatalog
     totalChapters: mediaType === 'comic' ? media.chapters ?? null : null,
     globalRating: scoreOutOfTen(media.averageScore, 100),
     season: mapSeason(media),
+    releaseDate: isoDateFromParts(media.startDate?.year, media.startDate?.month, media.startDate?.day),
     genres: joinGenres(media.genres),
     creator: mapCreator(media),
     synopsis: cleanSynopsis(media.description),

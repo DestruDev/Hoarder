@@ -2,7 +2,7 @@ import { SAMPLE_CATALOG } from '@/lib/db/catalog-data';
 import type { NewCatalogItem, ReleaseStatus } from '@/lib/db/types';
 
 import { fetchJson, mapInBatches } from './http';
-import { cleanSynopsis, joinGenres, seasonFromIsoDate } from './metadata';
+import { cleanSynopsis, isoDateFromLooseDate, joinGenres, seasonFromIsoDate } from './metadata';
 import { scoreOutOfTen } from './rating';
 
 const EXTRA_TITLES = [
@@ -148,6 +148,7 @@ function mapShow(show: TvmazeShow | null | undefined): NewCatalogItem | null {
     totalEpisodes: countEpisodes(show._embedded?.seasons),
     globalRating: scoreOutOfTen(show.rating?.average),
     season: seasonFromIsoDate(show.premiered),
+    releaseDate: isoDateFromLooseDate(show.premiered),
     genres: joinGenres(show.genres),
     creator: show.network?.name?.trim() || show.webChannel?.name?.trim() || null,
     synopsis: cleanSynopsis(show.summary),

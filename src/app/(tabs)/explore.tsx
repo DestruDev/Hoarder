@@ -8,8 +8,24 @@ import { ExploreSearchHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
-import { getCatalogItems, peekCatalogItems, type CatalogItem, type CollectionView } from '@/lib/db';
-import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
+import {
+  getCatalogItems,
+  getItems,
+  peekCatalogItems,
+  type CatalogItem,
+  type CollectionView,
+  type Item,
+} from '@/lib/db';
+import {
+  matchesGenreFilter,
+  matchesMediaName,
+  matchesMediaTypeFilter,
+  matchesReleaseFilter,
+  matchesStatusFilter,
+  matchesDateRules,
+  releaseDateOf,
+} from '@/lib/media-search';
+import { catalogKey, sortEntries } from '@/lib/media-sort';
 import { mediaTypeLabel } from '@/lib/status-labels';
 
 const ExploreEntry = memo(function ExploreEntry({
@@ -37,20 +53,23 @@ const ExploreEntry = memo(function ExploreEntry({
 });
 
 export default function ExploreScreen() {
-  const { query, filter } = useMediaQuery();
+  const { query, browse } = useMediaQuery();
+  const { filter, sort, statusFilter, releaseFilter, genreFilter, dateRules } = browse.explore;
   const deferredQuery = useDeferredValue(query);
   const { exploreView } = useAppSettings();
   const [items, setItems] = useState<CatalogItem[] | null>(() => peekCatalogItems());
+  const [libraryByKey, setLibraryByKey] = useState<Map<string, Item>>(() => new Map());
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
-      getCatalogItems()
-        .then((rows) => {
+      Promise.all([getCatalogItems(), getItems()])
+        .then(([rows, libraryRows]) => {
           if (!cancelled) {
             setItems(rows);
+            setLibraryByKey(new Map(libraryRows.map((row) => [catalogKey(row), row])));
             setError(null);
           }
         })
@@ -67,8 +86,18 @@ export default function ExploreScreen() {
   );
 
   const sections = useMemo(() => {
-    const visibleItems = (items ?? []).filter(
-      (item) => matchesMediaName(item.title, deferredQuery) && matchesMediaTypeFilter(item, filter),
+    const visibleItems = sortEntries(
+      (items ?? []).filter(
+        (item) =>
+          matchesMediaName(item.title, deferredQuery) &&
+          matchesMediaTypeFilter(item, filter) &&
+          matchesStatusFilter(libraryByKey.get(catalogKey(item))?.status, statusFilter) &&
+          matchesReleaseFilter(item.releaseStatus, releaseFilter) &&
+          matchesGenreFilter(item.genres, genreFilter) &&
+          matchesDateRules(releaseDateOf(item), dateRules),
+      ),
+      sort,
+      (item) => ({ title: item.title, catalog: item, library: libraryByKey.get(catalogKey(item)) }),
     );
 
     return CATALOG_SECTIONS.map((section) => ({
@@ -87,7 +116,17 @@ export default function ExploreScreen() {
         })
         .slice(0, CATALOG_SECTION_LIMIT),
     })).filter((section) => section.items.length > 0);
-  }, [deferredQuery, filter, items]);
+  }, [
+    deferredQuery,
+    filter,
+    genreFilter,
+    items,
+    libraryByKey,
+    releaseFilter,
+    sort,
+    statusFilter,
+    dateRules,
+  ]);
 
   const emptyState = (
     <View style={{ gap: 8 }}>

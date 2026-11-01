@@ -58,12 +58,14 @@ export function WheelPicker<T>({
   options,
   value,
   onChange,
+  onSelect,
   isEqual = (left, right) => left === right,
   fontSize = 26,
 }: {
   options: WheelOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  onSelect?: (value: T) => void;
   isEqual?: (left: T, right: T) => boolean;
   fontSize?: number;
 }) {
@@ -112,10 +114,13 @@ export function WheelPicker<T>({
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum
+        decelerationRate="normal"
         onMomentumScrollEnd={commitOffset}
-        onScrollEndDrag={commitOffset}
+        onScrollEndDrag={(event) => {
+          if (Math.abs(event.nativeEvent.velocity?.y ?? 0) < 0.05) {
+            commitOffset(event);
+          }
+        }}
         style={{ backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingVertical: SIDE_PADDING }}>
         {options.map((option, index) => {
@@ -126,6 +131,10 @@ export function WheelPicker<T>({
               key={option.key}
               onPress={() => {
                 onChange(option.value);
+                if (onSelect) {
+                  onSelect(option.value);
+                  return;
+                }
                 listRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
               }}
               style={{

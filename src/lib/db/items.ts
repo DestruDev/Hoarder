@@ -73,11 +73,13 @@ export async function addCatalogItemToLibrary(
 }
 
 export async function createItem(input: NewItemInput): Promise<Item> {
+  const now = new Date().toISOString();
   const [created] = await db
     .insert(items)
     .values({
       ...input,
-      dateAdded: input.dateAdded ?? new Date().toISOString(),
+      dateAdded: input.dateAdded ?? now,
+      updatedAt: now,
     })
     .returning();
 
@@ -92,7 +94,11 @@ export async function updateItem(
   id: number,
   input: Partial<NewItemInput>,
 ): Promise<Item | undefined> {
-  const [updated] = await db.update(items).set(input).where(eq(items.id, id)).returning();
+  const [updated] = await db
+    .update(items)
+    .set({ ...input, updatedAt: new Date().toISOString() })
+    .where(eq(items.id, id))
+    .returning();
   return updated;
 }
 

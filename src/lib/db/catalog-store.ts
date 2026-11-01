@@ -88,6 +88,7 @@ export async function upsertCatalogItems(entries: NewCatalogItem[]): Promise<Cat
       genres: entry.genres ?? found.genres,
       creator: entry.creator ?? found.creator,
       synopsis: entry.synopsis ?? found.synopsis,
+      releaseDate: entry.releaseDate ?? found.releaseDate,
     };
 
     const changed = (Object.keys(next) as Array<keyof typeof next>).some(

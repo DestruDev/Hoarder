@@ -24,8 +24,19 @@ function catalogNeedsMetadata(existing: CatalogItem[]): boolean {
   const described = existing.some((item) => item.season != null || item.synopsis != null);
   const shows = existing.filter((item) => item.mediaType === 'tv' || item.mediaType === 'anime');
   const showsHaveEpisodes = shows.some((item) => item.totalEpisodes != null);
+  const gamesHaveStatus = existing.some(
+    (item) => item.mediaType === 'game' && item.releaseStatus != null,
+  );
 
-  return !scored || !described || (shows.length > 0 && !showsHaveEpisodes);
+  const dated = existing.some((item) => item.releaseDate != null);
+
+  return (
+    !scored ||
+    !described ||
+    (shows.length > 0 && !showsHaveEpisodes) ||
+    !gamesHaveStatus ||
+    !dated
+  );
 }
 
 async function clearCatalog(): Promise<void> {

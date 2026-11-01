@@ -1,3 +1,5 @@
+import type { ReleaseStatus } from '@/lib/db/types';
+
 const SEASON_NAMES = ['Winter', 'Spring', 'Summer', 'Fall'] as const;
 
 const MONTHS: Record<string, number> = {
@@ -54,6 +56,81 @@ export function seasonFromLooseDate(date: string | null | undefined): string | n
 
   const month = text.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
   return seasonLabel(Number(year[1]), month ? MONTHS[month[1]] : null);
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+export function isoDateFromParts(
+  year: number | null | undefined,
+  month?: number | null,
+  day?: number | null,
+): string | null {
+  if (year == null || !Number.isFinite(year) || year <= 0) {
+    return null;
+  }
+
+  if (month == null || month < 1 || month > 12) {
+    return String(year);
+  }
+
+  if (day == null || day < 1 || day > 31) {
+    return `${year}-${pad(month)}`;
+  }
+
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+export function isoDateFromLooseDate(date: string | null | undefined): string | null {
+  const text = date?.trim();
+  if (!text) {
+    return null;
+  }
+
+  const iso = text.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+  if (iso) {
+    return isoDateFromParts(
+      Number(iso[1]),
+      iso[2] ? Number(iso[2]) : null,
+      iso[3] ? Number(iso[3]) : null,
+    );
+  }
+
+  const year = text.match(/\b(\d{4})\b/);
+  if (!year) {
+    return null;
+  }
+
+  const month = text.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  const day = text.match(/\b(\d{1,2})\b/);
+  return isoDateFromParts(
+    Number(year[1]),
+    month ? MONTHS[month[1]] : null,
+    month && day ? Number(day[1]) : null,
+  );
+}
+
+export function releaseStatusFromDate(
+  date: string | null | undefined,
+  comingSoon = false,
+): ReleaseStatus | null {
+  if (comingSoon) {
+    return 'upcoming';
+  }
+
+  const text = date?.trim();
+  if (!text) {
+    return null;
+  }
+
+  const iso = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  const time = iso ? Date.parse(iso) : Date.parse(text);
+  if (!Number.isFinite(time)) {
+    return null;
+  }
+
+  return time > Date.now() ? 'upcoming' : 'released';
 }
 
 export function joinGenres(genres: Array<string | null | undefined> | null | undefined): string | null {

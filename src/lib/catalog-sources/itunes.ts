@@ -2,7 +2,13 @@ import { SAMPLE_CATALOG } from '@/lib/db/catalog-data';
 import type { NewCatalogItem } from '@/lib/db/types';
 
 import { fetchJson, mapInBatches } from './http';
-import { cleanSynopsis, joinGenres, seasonFromIsoDate } from './metadata';
+import {
+  cleanSynopsis,
+  isoDateFromLooseDate,
+  joinGenres,
+  releaseStatusFromDate,
+  seasonFromIsoDate,
+} from './metadata';
 import { scoreOutOfTen } from './rating';
 
 const EXTRA_COMICS = [
@@ -109,6 +115,8 @@ function mapFeedEntry(entry: ItunesRssEntry, mediaType: 'book' | 'movie'): NewCa
     mediaType,
     coverImageUrl,
     season: seasonFromIsoDate(entry['im:releaseDate']?.label),
+    releaseStatus: releaseStatusFromDate(entry['im:releaseDate']?.label),
+    releaseDate: isoDateFromLooseDate(entry['im:releaseDate']?.label),
     genres: joinGenres([entry.category?.attributes?.label]),
     creator: entry['im:artist']?.label?.trim() || null,
     synopsis: cleanSynopsis(entry.summary?.label),
@@ -118,6 +126,8 @@ function mapFeedEntry(entry: ItunesRssEntry, mediaType: 'book' | 'movie'): NewCa
 function searchMetadata(result: ItunesSearchResult): Partial<NewCatalogItem> {
   return {
     season: seasonFromIsoDate(result.releaseDate),
+    releaseStatus: releaseStatusFromDate(result.releaseDate),
+    releaseDate: isoDateFromLooseDate(result.releaseDate),
     genres: joinGenres([
       ...(result.genres ?? []).filter((genre) => !/^(books|ebooks)$/i.test(genre)),
       result.primaryGenreName,

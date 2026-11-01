@@ -36,10 +36,27 @@ export const COMIC_ORIGIN_LABELS: Record<ComicOrigin, string> = {
 };
 
 export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, string> = {
-  upcoming: 'Upcoming',
-  releasing: 'Releasing',
-  released: 'Released',
+  releasing: 'Airing / Publishing',
+  upcoming: 'Not Yet Released',
+  released: 'Finished',
+  cancelled: 'Cancelled',
 };
+
+export function releaseStatusLabel(status: ReleaseStatus, mediaType: MediaType): string {
+  if (status !== 'releasing') {
+    return RELEASE_STATUS_LABELS[status];
+  }
+
+  if (isShowMediaType(mediaType)) {
+    return 'Airing';
+  }
+
+  if (mediaType === 'book' || mediaType === 'comic') {
+    return 'Publishing';
+  }
+
+  return 'Releasing';
+}
 
 export function mediaTypeLabel(
   mediaType: MediaType,

@@ -32,6 +32,7 @@ function mergeCatalogItem(current: NewCatalogItem, incoming: NewCatalogItem): Ne
     genres: firstDefined(current.genres, incoming.genres),
     creator: firstDefined(current.creator, incoming.creator),
     synopsis: firstDefined(current.synopsis, incoming.synopsis),
+    releaseDate: firstDefined(current.releaseDate, incoming.releaseDate),
   };
 }
 

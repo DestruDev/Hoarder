@@ -21,7 +21,7 @@ export const ITEM_STATUSES = [
 
 export type ItemStatus = (typeof ITEM_STATUSES)[number];
 
-export const RELEASE_STATUSES = ['upcoming', 'releasing', 'released'] as const;
+export const RELEASE_STATUSES = ['releasing', 'upcoming', 'released', 'cancelled'] as const;
 
 export type ReleaseStatus = (typeof RELEASE_STATUSES)[number];
 
@@ -79,11 +79,14 @@ export type Item = {
   currentPages: number | null;
   currentChapters: number | null;
   dateAdded: string;
+  startDate: string | null;
   finishDate: string | null;
+  updatedAt: string | null;
 };
 
-export type NewItemInput = Omit<Item, 'id' | 'dateAdded'> & {
+export type NewItemInput = Omit<Item, 'id' | 'dateAdded' | 'startDate' | 'updatedAt'> & {
   dateAdded?: string;
+  startDate?: string | null;
 };
 
 export type ItemFilters = {
@@ -126,6 +129,7 @@ export type CatalogItem = {
   genres: string | null;
   creator: string | null;
   synopsis: string | null;
+  releaseDate: string | null;
 };
 
 export type NewCatalogItem = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'> &

@@ -19,7 +19,9 @@ export const items = sqliteTable('items', {
   currentPages: integer('current_pages'),
   currentChapters: integer('current_chapters'),
   dateAdded: text('date_added').notNull(),
+  startDate: text('start_date'),
   finishDate: text('finish_date'),
+  updatedAt: text('updated_at'),
 });
 
 export const profile = sqliteTable('profile', {
@@ -51,6 +53,7 @@ export const catalog = sqliteTable('catalog', {
   genres: text('genres'),
   creator: text('creator'),
   synopsis: text('synopsis'),
+  releaseDate: text('release_date'),
 });
 
 export const feedNotifications = sqliteTable('feed_notifications', {

@@ -3,7 +3,14 @@ import type { NewCatalogItem } from '@/lib/db/types';
 import { CATALOG_SECTION_LIMIT } from '@/lib/catalog-sections';
 
 import { fetchJson, mapInBatches } from './http';
-import { cleanSynopsis, joinGenres, joinNames, seasonFromLooseDate } from './metadata';
+import {
+  cleanSynopsis,
+  isoDateFromLooseDate,
+  joinGenres,
+  joinNames,
+  releaseStatusFromDate,
+  seasonFromLooseDate,
+} from './metadata';
 import { ratioScoreOutOfTen } from './rating';
 
 type SteamSpyGame = {
@@ -20,7 +27,7 @@ type SteamAppDetails = {
     short_description?: string | null;
     developers?: string[] | null;
     genres?: Array<{ description?: string | null }> | null;
-    release_date?: { date?: string | null } | null;
+    release_date?: { date?: string | null; coming_soon?: boolean | null } | null;
   } | null;
 };
 
@@ -48,6 +55,11 @@ async function attachStoreDetails(
     return {
       ...item,
       season: seasonFromLooseDate(details.data.release_date?.date),
+      releaseDate: isoDateFromLooseDate(details.data.release_date?.date),
+      releaseStatus: releaseStatusFromDate(
+        details.data.release_date?.date,
+        details.data.release_date?.coming_soon === true,
+      ),
       genres: joinGenres(details.data.genres?.map((genre) => genre.description)),
       creator: joinNames(details.data.developers),
       synopsis: cleanSynopsis(details.data.short_description),

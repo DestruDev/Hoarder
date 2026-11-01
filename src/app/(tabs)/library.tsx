@@ -9,15 +9,41 @@ import { LibrarySearchHeader, useMediaQuery } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
-import { getItems, ITEM_STATUSES, updateItem, type Item, type ItemStatus } from '@/lib/db';
-import { matchesMediaName, matchesMediaTypeFilter } from '@/lib/media-search';
+import {
+  getCatalogItems,
+  getItems,
+  ITEM_STATUSES,
+  peekCatalogItems,
+  updateItem,
+  type CatalogItem,
+  type Item,
+  type ItemStatus,
+} from '@/lib/db';
+import {
+  matchesGenreFilter,
+  matchesMediaName,
+  matchesMediaTypeFilter,
+  matchesReleaseFilter,
+  matchesStatusFilter,
+  matchesDateRules,
+  releaseDateOf,
+} from '@/lib/media-search';
+import { catalogKey, sortEntries } from '@/lib/media-sort';
+
+function indexCatalog(rows: CatalogItem[]): Map<string, CatalogItem> {
+  return new Map(rows.map((row) => [catalogKey(row), row]));
+}
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
-  const { query, filter } = useMediaQuery();
+  const { query, browse } = useMediaQuery();
+  const { filter, sort, statusFilter, releaseFilter, genreFilter, dateRules } = browse.library;
   const { libraryView } = useAppSettings();
   const { posterWidth, posterHeight } = usePosterSize();
   const [items, setItems] = useState<Item[]>([]);
+  const [catalogByKey, setCatalogByKey] = useState<Map<string, CatalogItem>>(() =>
+    indexCatalog(peekCatalogItems() ?? []),
+  );
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Partial<Record<ItemStatus, boolean>>>({});
   const [notesItem, setNotesItem] = useState<Item | null>(null);
@@ -26,10 +52,11 @@ export default function LibraryScreen() {
     useCallback(() => {
       let cancelled = false;
 
-      getItems()
-        .then((rows) => {
+      Promise.all([getItems(), getCatalogItems()])
+        .then(([rows, catalogRows]) => {
           if (!cancelled) {
             setItems(rows);
+            setCatalogByKey(indexCatalog(catalogRows));
             setError(null);
           }
         })
@@ -46,13 +73,28 @@ export default function LibraryScreen() {
   );
 
   const visibleItems = items.filter(
-    (item) => matchesMediaName(item.title, query) && matchesMediaTypeFilter(item, filter),
+    (item) =>
+      matchesMediaName(item.title, query) &&
+      matchesMediaTypeFilter(item, filter) &&
+      matchesStatusFilter(item.status, statusFilter) &&
+      matchesReleaseFilter(
+        catalogByKey.get(catalogKey(item))?.releaseStatus ?? item.releaseStatus,
+        releaseFilter,
+      ) &&
+      matchesGenreFilter(catalogByKey.get(catalogKey(item))?.genres, genreFilter) &&
+      matchesDateRules(releaseDateOf(catalogByKey.get(catalogKey(item)) ?? {}), dateRules),
   );
   const isSearching = query.trim().length > 0;
 
+  const sortedItems = sortEntries(visibleItems, sort, (item) => ({
+    title: item.title,
+    library: item,
+    catalog: catalogByKey.get(catalogKey(item)),
+  }));
+
   const groups = ITEM_STATUSES.map((status) => ({
     status,
-    items: visibleItems.filter((item) => item.status === status),
+    items: sortedItems.filter((item) => item.status === status),
   })).filter((group) => group.items.length > 0);
 
   function toggleStatus(status: ItemStatus) {

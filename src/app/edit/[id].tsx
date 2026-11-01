@@ -121,7 +121,7 @@ export default function ItemEditScreen() {
           setCurrentEpisodes(row.currentEpisodes != null ? String(row.currentEpisodes) : '');
           setCurrentPages(row.currentPages != null ? String(row.currentPages) : '');
           setCurrentChapters(row.currentChapters != null ? String(row.currentChapters) : '');
-          setStartDate(toDateInput(row.dateAdded));
+          setStartDate(toDateInput(row.startDate ?? row.dateAdded));
           setFinishDate(toDateInput(row.finishDate));
           setNotes(row.notes ?? '');
         }
@@ -286,7 +286,7 @@ export default function ItemEditScreen() {
         status,
         rating: score,
         notes: notes.trim() || null,
-        dateAdded: parseDate(startDate, 'Start date'),
+        startDate: parseDate(startDate, 'Start date'),
         finishDate: parseOptionalDate(finishDate, 'Finish date'),
         currentEpisodes: isShowMediaType(item.mediaType)
           ? isCompleted && item.totalEpisodes != null

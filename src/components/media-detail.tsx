@@ -8,7 +8,7 @@ import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
 import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
-import { creatorLabel, mediaTypeLabel, RELEASE_STATUS_LABELS } from '@/lib/status-labels';
+import { creatorLabel, mediaTypeLabel, releaseStatusLabel } from '@/lib/status-labels';
 
 export type MediaDetails = Pick<
   CatalogItem,
@@ -97,11 +97,9 @@ export function MediaDetail({
       <Text>
         {creatorLabel(media.mediaType)}: {media.creator ?? '—'}
       </Text>
-      {isShowMediaType(media.mediaType) ? (
-        <Text>
-          Status: {media.releaseStatus ? RELEASE_STATUS_LABELS[media.releaseStatus] : '—'}
-        </Text>
-      ) : null}
+      <Text>
+        Status: {media.releaseStatus ? releaseStatusLabel(media.releaseStatus, media.mediaType) : '—'}
+      </Text>
       {isShowMediaType(media.mediaType) ? (
         <Text>Episodes: {totalEpisodes ?? '—'}</Text>
       ) : null}

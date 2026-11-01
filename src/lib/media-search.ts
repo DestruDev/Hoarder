@@ -1,9 +1,23 @@
-import { COMIC_ORIGINS, MEDIA_TYPES, type ComicOrigin, type FeedKind, type MediaType } from '@/lib/db/types';
-import { COMIC_ORIGIN_LABELS, MEDIA_TYPE_LABELS } from '@/lib/status-labels';
+import {
+  COMIC_ORIGINS,
+  ITEM_STATUSES,
+  MEDIA_TYPES,
+  RELEASE_STATUSES,
+  type ComicOrigin,
+  type FeedKind,
+  type ItemStatus,
+  type MediaType,
+  type ReleaseStatus,
+} from '@/lib/db/types';
+import {
+  COMIC_ORIGIN_LABELS,
+  MEDIA_TYPE_LABELS,
+  RELEASE_STATUS_LABELS,
+  STATUS_LABELS,
+} from '@/lib/status-labels';
 
 export type ComicFilterValue = `comic:${ComicOrigin}`;
 export type MediaFilterValue = MediaType | ComicFilterValue;
-export type MediaFilterOption = MediaFilterValue | null;
 export type MediaBrowseFilter = MediaFilterValue[];
 
 export function comicFilterValue(origin: ComicOrigin): ComicFilterValue {
@@ -11,10 +25,10 @@ export function comicFilterValue(origin: ComicOrigin): ComicFilterValue {
 }
 
 export function getMediaFilterOptions(): {
-  value: MediaFilterOption;
+  value: MediaFilterValue;
   label: string;
 }[] {
-  const options: { value: MediaFilterOption; label: string }[] = [{ value: null, label: 'All' }];
+  const options: { value: MediaFilterValue; label: string }[] = [];
 
   for (const type of MEDIA_TYPES) {
     if (type === 'comic') {
@@ -31,6 +45,200 @@ export function getMediaFilterOptions(): {
   }
 
   return options;
+}
+
+export const DEFAULT_MEDIA_FILTER: MediaBrowseFilter = getMediaFilterOptions().map(
+  (option) => option.value,
+);
+
+export function isMediaFilterActive(filter: MediaBrowseFilter): boolean {
+  return DEFAULT_MEDIA_FILTER.some((value) => !filter.includes(value));
+}
+
+export type StatusFilterValue = ItemStatus | 'none';
+
+export const DEFAULT_STATUS_FILTER: StatusFilterValue[] = [...ITEM_STATUSES, 'none'];
+
+export function getStatusFilterOptions(includeNotInLibrary: boolean): {
+  value: StatusFilterValue;
+  label: string;
+}[] {
+  const options: { value: StatusFilterValue; label: string }[] = ITEM_STATUSES.map((status) => ({
+    value: status,
+    label: STATUS_LABELS[status],
+  }));
+
+  if (includeNotInLibrary) {
+    options.push({ value: 'none', label: 'Not in Library' });
+  }
+
+  return options;
+}
+
+export function toggleStatusFilter(
+  filter: StatusFilterValue[],
+  value: StatusFilterValue,
+): StatusFilterValue[] {
+  return filter.includes(value) ? filter.filter((entry) => entry !== value) : [...filter, value];
+}
+
+export function isStatusFilterActive(
+  filter: StatusFilterValue[],
+  includeNotInLibrary = true,
+): boolean {
+  return getStatusFilterOptions(includeNotInLibrary).some((option) => !filter.includes(option.value));
+}
+
+export function matchesStatusFilter(
+  status: ItemStatus | null | undefined,
+  filter: StatusFilterValue[],
+): boolean {
+  return filter.includes(status ?? 'none');
+}
+
+export const DEFAULT_RELEASE_FILTER: ReleaseStatus[] = [...RELEASE_STATUSES];
+
+export const RELEASE_FILTER_OPTIONS: { value: ReleaseStatus; label: string }[] = RELEASE_STATUSES.map(
+  (status) => ({ value: status, label: RELEASE_STATUS_LABELS[status] }),
+);
+
+export function toggleReleaseFilter(filter: ReleaseStatus[], value: ReleaseStatus): ReleaseStatus[] {
+  return filter.includes(value) ? filter.filter((entry) => entry !== value) : [...filter, value];
+}
+
+export function isReleaseFilterActive(filter: ReleaseStatus[]): boolean {
+  return DEFAULT_RELEASE_FILTER.some((value) => !filter.includes(value));
+}
+
+export function matchesReleaseFilter(
+  status: ReleaseStatus | null | undefined,
+  filter: ReleaseStatus[],
+): boolean {
+  if (!status) {
+    return !isReleaseFilterActive(filter);
+  }
+
+  return filter.includes(status);
+}
+
+export function parseGenres(genres: string | null | undefined): string[] {
+  return (genres ?? '')
+    .split(',')
+    .map((genre) => genre.trim())
+    .filter(Boolean);
+}
+
+export function collectGenres(items: Array<{ genres?: string | null }>): string[] {
+  const unique = new Map<string, string>();
+
+  for (const item of items) {
+    for (const genre of parseGenres(item.genres)) {
+      const key = genre.toLowerCase();
+      if (!unique.has(key)) {
+        unique.set(key, genre);
+      }
+    }
+  }
+
+  return [...unique.values()].sort((left, right) => left.localeCompare(right));
+}
+
+export function toggleGenreFilter(filter: string[], genre: string): string[] {
+  const key = genre.toLowerCase();
+  return filter.includes(key) ? filter.filter((entry) => entry !== key) : [...filter, key];
+}
+
+export function matchesGenreFilter(genres: string | null | undefined, filter: string[]): boolean {
+  if (filter.length === 0) {
+    return true;
+  }
+
+  return parseGenres(genres).some((genre) => filter.includes(genre.toLowerCase()));
+}
+
+export const DATE_OPERATORS = ['=', '≠', '≤', '<', '≥', '>'] as const;
+
+export type DateOperator = (typeof DATE_OPERATORS)[number];
+
+export type DateRule = {
+  id: string;
+  operator: DateOperator;
+  year: number;
+  month: number | null;
+  day: number | null;
+};
+
+let nextDateRuleId = 0;
+
+export function createDateRule(operator: DateOperator = '='): DateRule {
+  nextDateRuleId += 1;
+  return {
+    id: `date-${nextDateRuleId}`,
+    operator,
+    year: new Date().getFullYear(),
+    month: null,
+    day: null,
+  };
+}
+
+function dateParts(date: string | null | undefined): number[] | null {
+  const match = date?.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+  if (!match) {
+    return null;
+  }
+
+  return [match[1], match[2], match[3]].filter(Boolean).map(Number);
+}
+
+export function releaseDateOf(item: {
+  releaseDate?: string | null;
+  season?: string | null;
+}): string | null {
+  if (item.releaseDate) {
+    return item.releaseDate;
+  }
+
+  return item.season?.match(/\b(\d{4})\b/)?.[1] ?? null;
+}
+
+function rulePasses(itemParts: number[], rule: DateRule): boolean {
+  const ruleParts = [rule.year, rule.month, rule.month == null ? null : rule.day].filter(
+    (part): part is number => part != null,
+  );
+  const depth = Math.min(itemParts.length, ruleParts.length);
+  let compare = 0;
+
+  for (let index = 0; index < depth && compare === 0; index += 1) {
+    compare = itemParts[index] - ruleParts[index];
+  }
+
+  switch (rule.operator) {
+    case '=':
+      return compare === 0;
+    case '≠':
+      return compare !== 0;
+    case '≤':
+      return compare <= 0;
+    case '<':
+      return compare < 0;
+    case '≥':
+      return compare >= 0;
+    case '>':
+      return compare > 0;
+  }
+}
+
+export function matchesDateRules(date: string | null | undefined, rules: DateRule[]): boolean {
+  if (rules.length === 0) {
+    return true;
+  }
+
+  const parts = dateParts(date);
+  if (!parts) {
+    return false;
+  }
+
+  return rules.every((rule) => rulePasses(parts, rule));
 }
 
 export const FEED_FILTERS = ['your', 'friend', 'notification'] as const;
@@ -81,40 +289,17 @@ export function matchesMediaTypeFilter(
   item: { mediaType: MediaType; mangaOrigin?: ComicOrigin | null },
   filter: MediaBrowseFilter,
 ): boolean {
-  if (filter.length === 0) {
-    return true;
-  }
-
   if (item.mediaType !== 'comic') {
     return filter.includes(item.mediaType);
-  }
-
-  if (filter.includes('comic')) {
-    return true;
   }
 
   return filter.includes(comicFilterValue(item.mangaOrigin ?? 'american'));
 }
 
-export function isMediaFilterSelected(
-  filter: MediaBrowseFilter,
-  option: MediaFilterOption,
-): boolean {
-  if (option === null) {
-    return filter.length === 0;
-  }
-
-  return filter.includes(option);
-}
-
 export function toggleMediaFilter(
   filter: MediaBrowseFilter,
-  option: MediaFilterOption,
+  option: MediaFilterValue,
 ): MediaBrowseFilter {
-  if (option === null) {
-    return [];
-  }
-
   if (filter.includes(option)) {
     return filter.filter((value) => value !== option);
   }

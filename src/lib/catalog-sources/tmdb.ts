@@ -3,7 +3,13 @@ import type { MediaType, NewCatalogItem, ReleaseStatus } from '@/lib/db/types';
 import { CATALOG_SECTION_LIMIT } from '@/lib/catalog-sections';
 
 import { fetchJson, mapInBatches } from './http';
-import { cleanSynopsis, joinGenres, joinNames, seasonFromIsoDate } from './metadata';
+import {
+  cleanSynopsis,
+  isoDateFromLooseDate,
+  joinGenres,
+  joinNames,
+  seasonFromIsoDate,
+} from './metadata';
 import { scoreOutOfTen } from './rating';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -73,8 +79,9 @@ function mapDateStatus(date: string | null | undefined): ReleaseStatus | null {
 function mapTvStatus(status: string | null | undefined): ReleaseStatus | null {
   switch (status) {
     case 'Ended':
-    case 'Canceled':
       return 'released';
+    case 'Canceled':
+      return 'cancelled';
     case 'Returning Series':
     case 'In Production':
       return 'releasing';
@@ -107,6 +114,7 @@ function mapResults(results: TmdbMedia[] | null | undefined, mediaType: MediaTyp
       releaseStatus: mapDateStatus(releaseDate),
       globalRating: scoreOutOfTen(entry.vote_average),
       season: seasonFromIsoDate(releaseDate),
+      releaseDate: isoDateFromLooseDate(releaseDate),
       synopsis: cleanSynopsis(entry.overview),
       tmdbId: entry.id ?? undefined,
     });
