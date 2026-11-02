@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { useAuth } from '@/components/auth-provider';
 import { SettingsSearchHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { colors } from '@/constants/theme';
@@ -16,6 +17,7 @@ type SettingItem = {
 export default function SettingsScreen() {
   const router = useRouter();
   const { query } = useMediaQuery();
+  const { session, signOut } = useAuth();
 
   const settings: SettingItem[] = [
     {
@@ -70,6 +72,24 @@ export default function SettingsScreen() {
           ))}
         </View>
       )}
+      {session ? (
+        <View style={{ gap: 8, marginTop: 12 }}>
+          <Text style={{ color: colors.textMuted }}>Signed in as {session.user.email}</Text>
+          <Pressable
+            onPress={() => void signOut()}
+            accessibilityRole="button"
+            style={{
+              alignItems: 'center',
+              backgroundColor: colors.searchBarBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 10,
+              paddingVertical: 14,
+            }}>
+            <Text style={{ color: colors.danger, fontWeight: '600' }}>Sign out</Text>
+          </Pressable>
+        </View>
+      ) : null}
       </ScreenScrollView>
     </Screen>
   );

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { AppSettingsProvider } from '@/components/app-settings';
+import { AuthProvider, useAuth } from '@/components/auth-provider';
 import { Screen, Text } from '@/components/themed';
 import { colors, navigationTheme } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
@@ -115,34 +116,55 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <AppSettingsProvider>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
-            headerTitleStyle: { color: colors.text },
-            contentStyle: { backgroundColor: colors.background },
-          }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
-          <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
-          <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
-          <Stack.Screen
-            name="edit/[id]"
-            options={{
-              title: 'Edit',
-              presentation: 'transparentModal',
-              animation: 'none',
-              headerShown: false,
-              contentStyle: { backgroundColor: 'transparent' },
-            }}
-          />
-          <Stack.Screen name="form" options={{ title: 'Item' }} />
-          <Stack.Screen name="debug" options={{ title: 'Debug' }} />
-          <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
-          <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
-        </Stack>
-      </AppSettingsProvider>
+      <AuthProvider>
+        <AppSettingsProvider>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </AppSettingsProvider>
+      </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+function RootNavigator() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen progress={{ label: 'Signing in…', current: 0, total: 0 }} />;
+  }
+
+  const signedIn = session != null;
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
+        headerTitleStyle: { color: colors.text },
+        contentStyle: { backgroundColor: colors.background },
+      }}>
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
+        <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
+        <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
+        <Stack.Screen
+          name="edit/[id]"
+          options={{
+            title: 'Edit',
+            presentation: 'transparentModal',
+            animation: 'none',
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+        <Stack.Screen name="form" options={{ title: 'Item' }} />
+        <Stack.Screen name="debug" options={{ title: 'Debug' }} />
+        <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
+    </Stack>
   );
 }
