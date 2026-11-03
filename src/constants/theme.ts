@@ -1,10 +1,13 @@
 import { DarkTheme } from '@react-navigation/native';
 
+// Core tokens: build new screens from these. Values are placeholders.
 export const colors = {
   background: '#000000',
+  surface: '#161616',
   text: '#ffffff',
-  textMuted: '#aaaaaa',
+  accent: '#4f8cff',
   border: '#333333',
+  textMuted: '#aaaaaa',
   inputBackground: '#111111',
   searchBarBackground: '#2a2a2a',
   placeholder: '#888888',
