@@ -1,6 +1,6 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import type { CollectionView, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus } from './types';
+import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -39,6 +39,7 @@ export const appSettings = sqliteTable('app_settings', {
   ratingSystem: text('rating_system').notNull().$type<RatingSystem>(),
   libraryView: text('library_view').notNull().default('list').$type<CollectionView>(),
   exploreView: text('explore_view').notNull().default('card').$type<CollectionView>(),
+  colorScheme: text('color_scheme').notNull().default('dark').$type<ColorScheme>(),
 });
 
 export const catalog = sqliteTable('catalog', {

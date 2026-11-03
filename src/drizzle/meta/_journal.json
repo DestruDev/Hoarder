@@ -169,6 +169,13 @@
       "when": 1793685600000,
       "tag": "0023_user_scoped_data",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1793772000000,
+      "tag": "0024_app_settings_color_scheme",
+      "breakpoints": true
     }
   ]
 }

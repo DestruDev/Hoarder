@@ -4,12 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { Screen, Text, TextInput } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 type Mode = 'sign_in' | 'sign_up';
 
 export default function LoginScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>('sign_in');

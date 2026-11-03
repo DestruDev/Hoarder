@@ -1,0 +1,1 @@
+ALTER TABLE `app_settings` ADD `color_scheme` text DEFAULT 'dark' NOT NULL;

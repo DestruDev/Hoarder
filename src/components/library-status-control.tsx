@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text, TextInput } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   addCatalogItemToLibrary,
   ITEM_STATUSES,
@@ -67,6 +67,7 @@ function progressUnitLabel(tracksEpisodes: boolean, tracksChapters: boolean, tra
 }
 
 function QuickButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -108,6 +109,7 @@ function StepButton({
   label: string;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -137,6 +139,7 @@ export function LibraryStatusControl({
   libraryItem?: Item;
   onLibraryItemChange: (item: Item) => void;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { formatScoreOutOfTen, ratingSystem } = useAppSettings();
   const [open, setOpen] = useState<QuickEdit | null>(null);
@@ -311,7 +314,7 @@ export function LibraryStatusControl({
               right: 0,
               bottom: 0,
               left: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              backgroundColor: colors.overlay,
             }}
           />
 

@@ -26,7 +26,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   FEED_FILTER_OPTIONS,
   DEFAULT_STATUS_FILTER,
@@ -258,6 +258,7 @@ export function MediaSearchRoot({ children }: { children: ReactNode }) {
 }
 
 export function HeaderSearchButton() {
+  const colors = useColors();
   const { openSearch } = useMediaSearch();
 
   return (
@@ -279,6 +280,7 @@ export function HeaderSearchButton() {
 }
 
 export function HeaderFilterButton() {
+  const colors = useColors();
   const tab = useActiveTab();
   const { filter, feedFilter, sort, statusFilter, releaseFilter, genreFilter, dateRules, openFilter } =
     useMediaSearch();
@@ -316,6 +318,7 @@ function FeedFilterDropdown({
   visible: boolean;
   onClose: () => void;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { feedFilter, setFeedFilter } = useMediaSearch();
 
@@ -383,6 +386,7 @@ function SheetSection({
   summary: string;
   children: ReactNode;
 }) {
+  const colors = useColors();
   const [collapsed, setCollapsed] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
 
@@ -433,6 +437,7 @@ function SheetOption({
   selected: boolean;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -483,6 +488,7 @@ function MediaFilterSheet({
   visible: boolean;
   onClose: () => void;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const sheetHeight = Math.round(windowHeight * 0.9);
@@ -646,7 +652,7 @@ function MediaFilterSheet({
           <Animated.View
             style={{
               flex: 1,
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              backgroundColor: colors.overlay,
               opacity: translateY.interpolate({
                 inputRange: [0, sheetHeight],
                 outputRange: [1, 0],
@@ -923,6 +929,7 @@ function DateRuleCard({
   onRemove: () => void;
   onPick: (field: DateField) => void;
 }) {
+  const colors = useColors();
   return (
     <View
       style={{
@@ -996,6 +1003,7 @@ function DateFieldButton({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -1037,6 +1045,7 @@ function WheelPickerModal<T>({
   onChange: (value: T) => void;
   onClose: () => void;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
 
   return (
@@ -1052,7 +1061,7 @@ function WheelPickerModal<T>({
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: colors.overlay,
           }}
         />
         <View
@@ -1085,6 +1094,7 @@ function WheelPickerModal<T>({
 }
 
 function ResetButton({ dimmed, onPress }: { dimmed: boolean; onPress: () => void }) {
+  const colors = useColors();
   const scale = useRef(new Animated.Value(1)).current;
   const spin = useRef(new Animated.Value(0)).current;
 
@@ -1152,6 +1162,7 @@ function SortChip({
   accessibilityLabel: string;
   onPress: () => void;
 }) {
+  const colors = useColors();
   const iconNode = <Ionicons name={icon} size={16} color={colors.text} />;
 
   return (
@@ -1203,6 +1214,7 @@ export function HeaderSearchBar({
   onHidden: () => void;
   autoFocus: boolean;
 }) {
+  const colors = useColors();
   const tab = useActiveTab();
   const inputRef = useRef<TextInput>(null);
   const progress = useRef(new Animated.Value(0)).current;
@@ -1317,6 +1329,7 @@ export function TabSearchHeader({
   showFilter?: boolean;
   showSearch?: boolean;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const tab = useActiveTab();
   const { isSearching } = useMediaSearch();

@@ -5,7 +5,7 @@ import { useWindowDimensions, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 
 const PLACEHOLDER_COVER = require('../../assets/images/cover-placeholder.png');
 const POSTER_GAP = 12;
@@ -34,6 +34,7 @@ export function MediaCover({
   width?: number;
   height?: number;
 }) {
+  const colors = useColors();
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export function MediaRow({
   rating?: number | null;
   coverImageUrl?: string | null;
 }) {
+  const colors = useColors();
   const { formatScore } = useAppSettings();
 
   return (
@@ -104,6 +106,7 @@ export function MediaPoster({
   width?: number;
   height?: number;
 }) {
+  const colors = useColors();
   const { formatScore } = useAppSettings();
 
   return (

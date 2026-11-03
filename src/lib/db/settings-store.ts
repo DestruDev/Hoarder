@@ -3,12 +3,13 @@ import { eq } from 'drizzle-orm';
 import { getActiveUserId } from './active-user';
 import { db } from './client';
 import { appSettings } from './schema';
-import type { AppSettings, CollectionView, RatingSystem } from './types';
+import type { AppSettings, CollectionView, ColorScheme, RatingSystem } from './types';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   ratingSystem: 'decimal',
   libraryView: 'list',
   exploreView: 'card',
+  colorScheme: 'dark',
 };
 
 function normalizeRatingSystem(value: string | null | undefined): RatingSystem {
@@ -22,11 +23,16 @@ function normalizeCollectionView(
   return value === 'list' || value === 'card' ? value : fallback;
 }
 
+function normalizeColorScheme(value: string | null | undefined): ColorScheme {
+  return value === 'light' ? 'light' : 'dark';
+}
+
 function normalizeSettings(input: Partial<AppSettings> | null | undefined): AppSettings {
   return {
     ratingSystem: normalizeRatingSystem(input?.ratingSystem),
     libraryView: normalizeCollectionView(input?.libraryView, DEFAULT_APP_SETTINGS.libraryView),
     exploreView: normalizeCollectionView(input?.exploreView, DEFAULT_APP_SETTINGS.exploreView),
+    colorScheme: normalizeColorScheme(input?.colorScheme),
   };
 }
 
@@ -53,6 +59,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
       ratingSystem: nextSettings.ratingSystem,
       libraryView: nextSettings.libraryView,
       exploreView: nextSettings.exploreView,
+      colorScheme: nextSettings.colorScheme,
     })
     .onConflictDoUpdate({
       target: appSettings.userId,
@@ -60,6 +67,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
         ratingSystem: nextSettings.ratingSystem,
         libraryView: nextSettings.libraryView,
         exploreView: nextSettings.exploreView,
+        colorScheme: nextSettings.colorScheme,
       },
     });
 

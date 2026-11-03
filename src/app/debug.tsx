@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   clearLibrary,
   resetAndSeed,
@@ -58,6 +58,7 @@ function updateProgress(progress: SeedProgress) {
 }
 
 export default function DebugScreen() {
+  const colors = useColors();
   const [job, setJob] = useState(debugJob);
 
   useEffect(() => {

@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text, TextInput } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 
 export function NotesModal({
   visible,
@@ -18,6 +18,7 @@ export function NotesModal({
   onClose: () => void;
   onSave: (notes: string) => Promise<void>;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState(notes);
   const [saving, setSaving] = useState(false);
@@ -61,7 +62,7 @@ export function NotesModal({
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: colors.overlay,
           }}
         />
 

@@ -5,7 +5,7 @@ import { Animated, Easing, Keyboard, PanResponder, Pressable, ScrollView, useWin
 
 import { useAppSettings } from '@/components/app-settings';
 import { ScreenScrollView, Text, TextInput } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   ITEM_STATUSES,
   getItemById,
@@ -69,6 +69,7 @@ function parseWholeNumber(value: string, label: string): number | null {
 }
 
 export default function ItemEditScreen() {
+  const colors = useColors();
   const router = useRouter();
   const navigation = useNavigation();
   const { height: windowHeight } = useWindowDimensions();
@@ -369,7 +370,7 @@ export default function ItemEditScreen() {
         <Animated.View
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: colors.overlay,
             opacity: translateY.interpolate({
               inputRange: [0, sheetHeight],
               outputRange: [1, 0],
@@ -575,6 +576,7 @@ function EditHeader({
   onSave: () => void;
   disabled: boolean;
 }) {
+  const colors = useColors();
   const scale = useRef(new Animated.Value(1)).current;
   const popping = useRef(false);
 

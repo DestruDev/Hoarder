@@ -8,7 +8,7 @@ import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/compone
 import { LibrarySearchHeader, useMediaQuery } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   getCatalogItems,
   getItems,
@@ -36,6 +36,7 @@ function indexCatalog(rows: CatalogItem[]): Map<string, CatalogItem> {
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
 
 export default function LibraryScreen() {
+  const colors = useColors();
   const { query, browse } = useMediaQuery();
   const { filter, sort, statusFilter, releaseFilter, genreFilter, dateRules } = browse.library;
   const { libraryView } = useAppSettings();
@@ -249,6 +250,7 @@ function LibraryStatusGroup({
   onToggle: () => void;
   children: ReactNode;
 }) {
+  const colors = useColors();
   const highlight = useRef(new Animated.Value(0)).current;
   const progress = useRef(new Animated.Value(0)).current;
   const [shown, setShown] = useState(open);
@@ -337,7 +339,7 @@ function LibraryStatusGroup({
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: '#ffffff',
+            backgroundColor: colors.text,
             opacity: highlight.interpolate({
               inputRange: [0, 1],
               outputRange: [0, 0.07],

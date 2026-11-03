@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { ColorsProvider } from '@/components/theme-colors';
 import {
   DEFAULT_APP_SETTINGS,
   getAppSettings,
   saveAppSettings,
   type AppSettings,
   type CollectionView,
+  type ColorScheme,
   type RatingSystem,
 } from '@/lib/db';
 import { formatScore, formatScoreOutOfTen } from '@/lib/status-labels';
@@ -14,6 +16,7 @@ type AppSettingsContextValue = AppSettings & {
   setRatingSystem: (ratingSystem: RatingSystem) => void;
   setLibraryView: (libraryView: CollectionView) => void;
   setExploreView: (exploreView: CollectionView) => void;
+  setColorScheme: (colorScheme: ColorScheme) => void;
   formatScore: (rating: number) => string;
   formatScoreOutOfTen: (rating: number) => string;
 };
@@ -64,13 +67,18 @@ export function AppSettingsProvider({ userId, children }: { userId: string | nul
       setRatingSystem: (ratingSystem) => patchSettings({ ratingSystem }),
       setLibraryView: (libraryView) => patchSettings({ libraryView }),
       setExploreView: (exploreView) => patchSettings({ exploreView }),
+      setColorScheme: (colorScheme) => patchSettings({ colorScheme }),
       formatScore: (rating) => formatScore(rating, settings.ratingSystem),
       formatScoreOutOfTen: (rating) => formatScoreOutOfTen(rating, settings.ratingSystem),
     }),
     [patchSettings, settings],
   );
 
-  return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;
+  return (
+    <AppSettingsContext.Provider value={value}>
+      <ColorsProvider scheme={settings.colorScheme}>{children}</ColorsProvider>
+    </AppSettingsContext.Provider>
+  );
 }
 
 export function useAppSettings(): AppSettingsContextValue {

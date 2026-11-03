@@ -5,7 +5,7 @@ import { Pressable, View } from 'react-native';
 import { useAuth } from '@/components/auth-provider';
 import { SettingsSearchHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import { matchesSearchText } from '@/lib/media-search';
 
 type SettingItem = {
@@ -15,6 +15,7 @@ type SettingItem = {
 };
 
 export default function SettingsScreen() {
+  const colors = useColors();
   const router = useRouter();
   const { query } = useMediaQuery();
   const { session, signOut } = useAuth();

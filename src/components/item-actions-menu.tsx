@@ -5,7 +5,7 @@ import { Animated, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import { deleteItem, type Item } from '@/lib/db';
 
 export function ItemActionsMenu({
@@ -15,6 +15,7 @@ export function ItemActionsMenu({
   item: Item;
   onRemoved: () => void;
 }) {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);

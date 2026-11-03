@@ -6,7 +6,7 @@ import { ItemActionsMenu } from '@/components/item-actions-menu';
 import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
 import { creatorLabel, mediaTypeLabel, releaseStatusLabel } from '@/lib/status-labels';
 
@@ -38,6 +38,7 @@ export function MediaDetail({
   onLibraryItemChange: (item: Item | undefined) => void;
   onRemoved: () => void;
 }) {
+  const colors = useColors();
   const totalEpisodes = media.totalEpisodes ?? libraryItem?.totalEpisodes;
   const totalPages = libraryItem?.totalPages ?? media.totalPages;
   const totalChapters = libraryItem?.totalChapters ?? media.totalChapters;

@@ -6,7 +6,7 @@ import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaRow } from '@/components/media-cover';
 import { ExploreSearchHeader, useMediaQuery } from '@/components/media-search';
 import { Screen, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import { CATALOG_SECTION_LIMIT, CATALOG_SECTIONS } from '@/lib/catalog-sections';
 import {
   getCatalogItems,
@@ -53,6 +53,7 @@ const ExploreEntry = memo(function ExploreEntry({
 });
 
 export default function ExploreScreen() {
+  const colors = useColors();
   const { query, browse } = useMediaQuery();
   const { filter, sort, statusFilter, releaseFilter, genreFilter, dateRules } = browse.explore;
   const deferredQuery = useDeferredValue(query);

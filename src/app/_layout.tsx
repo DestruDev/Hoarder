@@ -7,10 +7,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
-import { AppSettingsProvider } from '@/components/app-settings';
+import { AppSettingsProvider, useAppSettings } from '@/components/app-settings';
 import { AuthProvider, useAuth } from '@/components/auth-provider';
 import { Screen, Text } from '@/components/themed';
-import { colors, navigationTheme } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
+import { navigationThemeFor } from '@/constants/theme';
 import migrations from '@/drizzle/migrations';
 import { catalogSectionKey } from '@/lib/catalog-sections';
 import {
@@ -46,6 +47,7 @@ function prefetchExploreCovers(items: CatalogItem[]) {
 }
 
 function LoadingScreen({ progress }: { progress: SeedProgress | null }) {
+  const colors = useColors();
   const percent =
     progress && progress.total > 0
       ? Math.min(100, Math.round((progress.current / progress.total) * 100))
@@ -115,9 +117,8 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={navigationTheme}>
+    <ThemeProvider value={navigationThemeFor('dark')}>
       <AuthProvider>
-        <StatusBar style="light" />
         <RootNavigator />
       </AuthProvider>
     </ThemeProvider>
@@ -132,11 +133,22 @@ function RootNavigator() {
   }
 
   const userId = session?.user.id ?? null;
-  const signedIn = userId != null;
 
   return (
     // Keyed by account so settings reset to defaults instead of leaking between users.
     <AppSettingsProvider key={userId ?? 'signed-out'} userId={userId}>
+      <AppStack signedIn={userId != null} />
+    </AppSettingsProvider>
+  );
+}
+
+function AppStack({ signedIn }: { signedIn: boolean }) {
+  const colors = useColors();
+  const { colorScheme } = useAppSettings();
+
+  return (
+    <ThemeProvider value={navigationThemeFor(colorScheme)}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
@@ -167,6 +179,6 @@ function RootNavigator() {
         </Stack.Protected>
         <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
       </Stack>
-    </AppSettingsProvider>
+    </ThemeProvider>
   );
 }

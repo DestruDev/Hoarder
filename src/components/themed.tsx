@@ -9,17 +9,20 @@ import {
   type ViewProps,
 } from 'react-native';
 
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 
 export function Screen({ style, ...props }: ViewProps) {
+  const colors = useColors();
   return <View style={[{ flex: 1, backgroundColor: colors.background }, style]} {...props} />;
 }
 
 export function Text({ style, ...props }: TextProps) {
+  const colors = useColors();
   return <RNText style={[{ color: colors.text }, style]} {...props} />;
 }
 
 export function TextInput({ style, placeholderTextColor, ...props }: TextInputProps) {
+  const colors = useColors();
   return (
     <RNTextInput
       placeholderTextColor={placeholderTextColor ?? colors.placeholder}
@@ -44,6 +47,7 @@ export function ScreenScrollView({
   ref,
   ...props
 }: ScrollViewProps) {
+  const colors = useColors();
   return (
     <ScrollView
       ref={ref}

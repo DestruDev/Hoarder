@@ -108,10 +108,15 @@ export const COLLECTION_VIEWS = ['list', 'card'] as const;
 
 export type CollectionView = (typeof COLLECTION_VIEWS)[number];
 
+export const COLOR_SCHEMES = ['dark', 'light'] as const;
+
+export type ColorScheme = (typeof COLOR_SCHEMES)[number];
+
 export type AppSettings = {
   ratingSystem: RatingSystem;
   libraryView: CollectionView;
   exploreView: CollectionView;
+  colorScheme: ColorScheme;
 };
 
 export type CatalogItem = {

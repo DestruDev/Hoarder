@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppSettings } from '@/components/app-settings';
 import { Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import type { RatingSystem } from '@/lib/db';
 
 const ITEM_HEIGHT = 52;
@@ -69,6 +69,7 @@ export function WheelPicker<T>({
   isEqual?: (left: T, right: T) => boolean;
   fontSize?: number;
 }) {
+  const colors = useColors();
   const listRef = useRef<ScrollView>(null);
   const initialIndex = Math.max(
     0,
@@ -194,6 +195,7 @@ export function ScorePickerModal({
   onClose: () => void;
   onDone?: (score: number | null) => void;
 }) {
+  const colors = useColors();
   const { ratingSystem } = useAppSettings();
   const insets = useSafeAreaInsets();
 
@@ -216,7 +218,7 @@ export function ScorePickerModal({
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: colors.overlay,
           }}
         />
         <View

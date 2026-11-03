@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, Switch, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
 import { ScreenScrollView, Text } from '@/components/themed';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 import {
   COLLECTION_VIEWS,
   RATING_SYSTEMS,
@@ -12,11 +12,12 @@ import {
   type RatingSystem,
 } from '@/lib/db';
 
-const PREFERENCE_TABS = ['feed', 'library', 'explore', 'profile'] as const;
+const PREFERENCE_TABS = ['appearance', 'feed', 'library', 'explore', 'profile'] as const;
 
 type PreferenceTab = (typeof PREFERENCE_TABS)[number];
 
 const PREFERENCE_TAB_LABELS: Record<PreferenceTab, string> = {
+  appearance: 'Appearance',
   feed: 'Feed',
   library: 'Library',
   explore: 'Explore',
@@ -44,6 +45,7 @@ function ChoiceRow<T extends string>({
   options: { id: T; title: string }[];
   onChange: (value: T) => void;
 }) {
+  const colors = useColors();
   return (
     <View
       style={{
@@ -82,7 +84,43 @@ function ChoiceRow<T extends string>({
   );
 }
 
+function ToggleRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const colors = useColors();
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+      }}>
+      <Text>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: colors.border, true: colors.accent }}
+        ios_backgroundColor={colors.border}
+      />
+    </View>
+  );
+}
+
 export default function PreferencesScreen() {
+  const colors = useColors();
   const [tab, setTab] = useState<PreferenceTab>('library');
   const {
     ratingSystem,
@@ -91,6 +129,8 @@ export default function PreferencesScreen() {
     setLibraryView,
     exploreView,
     setExploreView,
+    colorScheme,
+    setColorScheme,
   } = useAppSettings();
 
   return (
@@ -99,7 +139,11 @@ export default function PreferencesScreen() {
       contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Stack.Screen options={{ title: 'Preferences' }} />
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ flexGrow: 1, gap: 8 }}>
         {PREFERENCE_TABS.map((preferenceTab) => {
           const selected = tab === preferenceTab;
 
@@ -108,8 +152,9 @@ export default function PreferencesScreen() {
               key={preferenceTab}
               onPress={() => setTab(preferenceTab)}
               style={{
-                flex: 1,
+                flexGrow: 1,
                 alignItems: 'center',
+                paddingHorizontal: 12,
                 backgroundColor: selected ? colors.searchBarBackground : colors.background,
                 borderColor: selected ? colors.text : colors.border,
                 borderWidth: 1,
@@ -122,7 +167,15 @@ export default function PreferencesScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
+
+      {tab === 'appearance' ? (
+        <ToggleRow
+          label="Dark mode"
+          value={colorScheme === 'dark'}
+          onChange={(dark) => setColorScheme(dark ? 'dark' : 'light')}
+        />
+      ) : null}
 
       {tab === 'library' ? (
         <View style={{ gap: 8 }}>

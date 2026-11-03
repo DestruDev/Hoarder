@@ -3,9 +3,10 @@ import { Stack, Tabs } from 'expo-router';
 import { useState } from 'react';
 
 import { MediaSearchRoot } from '@/components/media-search';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/components/theme-colors';
 
 export default function TabLayout() {
+  const colors = useColors();
   const [parentTitle, setParentTitle] = useState('Feed');
 
   return (
