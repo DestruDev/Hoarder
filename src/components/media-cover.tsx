@@ -12,6 +12,7 @@ const POSTER_GAP = 12;
 const POSTER_COLUMNS = 3;
 const SCREEN_PADDING = 32;
 const POSTER_ASPECT = 168 / 120;
+const TITLE_LINE_HEIGHT = 18;
 
 export function usePosterSize(columns = POSTER_COLUMNS) {
   const { width } = useWindowDimensions();
@@ -108,7 +109,10 @@ export function MediaPoster({
   return (
     <View style={{ width, gap: 8 }}>
       <MediaCover uri={coverImageUrl} width={width} height={height} />
-      <Text numberOfLines={2}>{title}</Text>
+      {/* Always reserve two lines so rows don't grow as longer titles render in. */}
+      <Text numberOfLines={2} style={{ lineHeight: TITLE_LINE_HEIGHT, minHeight: TITLE_LINE_HEIGHT * 2 }}>
+        {title}
+      </Text>
       {rating != null ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Ionicons name="star" size={12} color={colors.textMuted} />
