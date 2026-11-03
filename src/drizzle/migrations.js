@@ -27,6 +27,7 @@ import m0022 from './0022_catalog_release_date.sql';
 import m0023 from './0023_user_scoped_data.sql';
 import m0024 from './0024_app_settings_color_scheme.sql';
 import m0025 from './0025_app_settings_library_expanded.sql';
+import m0026 from './0026_saved_filters.sql';
 
   export default {
     journal,
@@ -56,7 +57,8 @@ m0021,
 m0022,
 m0023,
 m0024,
-m0025
+m0025,
+m0026
     }
   }
   

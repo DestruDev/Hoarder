@@ -12,20 +12,23 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  Alert,
   Animated,
   Easing,
+  KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
   PanResponder,
   Pressable,
   ScrollView,
   TextInput,
+  Platform,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Text } from '@/components/themed';
+import { Text, TextInput as ThemedTextInput } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import {
   FEED_FILTER_OPTIONS,
@@ -53,7 +56,8 @@ import {
   type StatusFilterValue,
 } from '@/lib/media-search';
 import { peekCatalogItems } from '@/lib/db/catalog-store';
-import type { ReleaseStatus } from '@/lib/db/types';
+import { createSavedFilter, deleteSavedFilter, getSavedFilters } from '@/lib/db/saved-filters-store';
+import { SAVED_FILTER_LIMIT, type ReleaseStatus, type SavedFilter } from '@/lib/db/types';
 import { WheelPicker, type WheelOption } from '@/components/score-picker';
 import {
   browseTabFor,
@@ -88,6 +92,7 @@ type MediaSearchContextValue = {
   setGenreFilter: (filter: string[]) => void;
   dateRules: DateRule[];
   setDateRules: (rules: DateRule[]) => void;
+  applyFilters: (filters: BrowseFilters) => void;
   openFilter: () => void;
 };
 
@@ -109,6 +114,45 @@ function defaultBrowseFilters(tab: BrowseTab): BrowseFilters {
     genreFilter: [],
     dateRules: [],
   };
+}
+
+// Saved filters are stored without date-rule ids (regenerated on apply) and with sorted
+// selections, so equal filters always serialize to the same string.
+function serializeFilters(filters: BrowseFilters): string {
+  return JSON.stringify({
+    filter: [...filters.filter].sort(),
+    sort: { key: filters.sort.key, direction: filters.sort.direction },
+    statusFilter: [...filters.statusFilter].sort(),
+    releaseFilter: [...filters.releaseFilter].sort(),
+    genreFilter: [...filters.genreFilter].sort(),
+    dateRules: filters.dateRules.map(({ operator, year, month, day }) => ({ operator, year, month, day })),
+  });
+}
+
+function parseFilters(json: string, tab: BrowseTab): BrowseFilters {
+  const fallback = defaultBrowseFilters(tab);
+  try {
+    const parsed = JSON.parse(json) as Partial<BrowseFilters>;
+    return {
+      filter: parsed.filter ?? fallback.filter,
+      sort: parsed.sort ?? fallback.sort,
+      statusFilter: parsed.statusFilter ?? fallback.statusFilter,
+      releaseFilter: parsed.releaseFilter ?? fallback.releaseFilter,
+      genreFilter: parsed.genreFilter ?? fallback.genreFilter,
+      dateRules: (parsed.dateRules ?? []).map((rule) => ({ ...rule, id: createDateRule().id })),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function nextFilterName(saved: SavedFilter[]): string {
+  const taken = new Set(saved.map((entry) => entry.name.trim().toLowerCase()));
+  let index = 1;
+  while (taken.has(`filter ${index}`)) {
+    index += 1;
+  }
+  return `Filter ${index}`;
 }
 
 type MediaQueryContextValue = Pick<MediaSearchContextValue, 'query' | 'feedFilter'> & {
@@ -177,6 +221,8 @@ export function MediaSearchRoot({ children }: { children: ReactNode }) {
       setReleaseFilter: setField('releaseFilter'),
       setGenreFilter: setField('genreFilter'),
       setDateRules: setField('dateRules'),
+      applyFilters: (next: BrowseFilters) =>
+        setBrowse((current) => ({ ...current, [browseTab]: next })),
     };
   }, [browseTab]);
 
@@ -505,6 +551,7 @@ function MediaFilterSheet({
     setGenreFilter,
     dateRules,
     setDateRules,
+    applyFilters,
   } = useMediaSearch();
   const genres = useMemo(() => (visible ? collectGenres(peekCatalogItems() ?? []) : []), [visible]);
   const tab = useActiveTab();
@@ -526,6 +573,65 @@ function MediaFilterSheet({
     setGenreFilter([]);
     setDateRules([]);
   };
+  const browseTab = browseTabFor(tab);
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const currentFiltersKey = serializeFilters({
+    filter,
+    sort,
+    statusFilter,
+    releaseFilter,
+    genreFilter,
+    dateRules,
+  });
+  const atSavedLimit = savedFilters.length >= SAVED_FILTER_LIMIT;
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    let cancelled = false;
+    getSavedFilters(browseTab)
+      .then((rows) => {
+        if (!cancelled) {
+          setSavedFilters(rows);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('[Hoarder] Failed to load saved filters:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [browseTab, visible]);
+
+  const saveCurrentFilters = (name: string) => {
+    setSaveDialogOpen(false);
+    createSavedFilter(browseTab, name, currentFiltersKey)
+      .then((created) => setSavedFilters((current) => [...current, created]))
+      .catch((error: unknown) => {
+        Alert.alert('Could not save filter', error instanceof Error ? error.message : undefined);
+      });
+  };
+
+  const confirmDeleteSavedFilter = (saved: SavedFilter) => {
+    Alert.alert(`Delete "${saved.name}"?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          setSavedFilters((current) => current.filter((entry) => entry.id !== saved.id));
+          deleteSavedFilter(saved.id).catch((error: unknown) => {
+            console.error('[Hoarder] Failed to delete saved filter:', error);
+          });
+        },
+      },
+    ]);
+  };
+
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
   const [datePicker, setDatePicker] = useState<{ ruleId: string; field: DateField } | null>(null);
   const datePickerRule = datePicker
@@ -732,6 +838,53 @@ function MediaFilterSheet({
               </View>
 
               <SheetSection
+                title="Saved Filters"
+                summary={`${savedFilters.length} of ${SAVED_FILTER_LIMIT}`}>
+                {savedFilters.length === 0 ? (
+                  <Text style={{ color: colors.textMuted }}>
+                    Save your current filters to switch back to them in one tap.
+                  </Text>
+                ) : (
+                  <SheetGrid>
+                    {savedFilters.map((saved) => (
+                      <SavedFilterOption
+                        key={saved.id}
+                        name={saved.name}
+                        selected={saved.filters === currentFiltersKey}
+                        onPress={() => applyFilters(parseFilters(saved.filters, browseTab))}
+                        onDelete={() => confirmDeleteSavedFilter(saved)}
+                      />
+                    ))}
+                  </SheetGrid>
+                )}
+                <Pressable
+                  onPress={() => setSaveDialogOpen(true)}
+                  disabled={atSavedLimit}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save current filters"
+                  accessibilityState={{ disabled: atSavedLimit }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                    borderRadius: 10,
+                    paddingVertical: 12,
+                    opacity: atSavedLimit ? 0.4 : 1,
+                  }}>
+                  <Ionicons name="bookmark-outline" size={18} color={colors.text} />
+                  <Text>
+                    {atSavedLimit
+                      ? `Limit reached (${SAVED_FILTER_LIMIT} of ${SAVED_FILTER_LIMIT})`
+                      : 'Save current filters'}
+                  </Text>
+                </Pressable>
+              </SheetSection>
+
+              <SheetSection
                 title="Status"
                 summary={selectionSummary(
                   statusOptions.filter((option) => statusFilter.includes(option.value)).length,
@@ -861,7 +1014,155 @@ function MediaFilterSheet({
           }}
           onClose={() => setDatePicker(null)}
         />
+        <SaveFilterDialog
+          visible={visible && saveDialogOpen}
+          defaultName={nextFilterName(savedFilters)}
+          onCancel={() => setSaveDialogOpen(false)}
+          onSave={saveCurrentFilters}
+        />
       </View>
+    </Modal>
+  );
+}
+
+function SavedFilterOption({
+  name,
+  selected,
+  onPress,
+  onDelete,
+}: {
+  name: string;
+  selected: boolean;
+  onPress: () => void;
+  onDelete: () => void;
+}) {
+  const colors = useColors();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Apply ${name}`}
+      accessibilityState={{ selected }}
+      style={{
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: selected ? colors.surface : colors.background,
+        borderColor: selected ? colors.accent : colors.border,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingLeft: 12,
+        paddingRight: 8,
+        paddingVertical: 12,
+      }}>
+      <Text style={{ flex: 1 }} numberOfLines={1}>
+        {name}
+      </Text>
+      <Pressable
+        onPress={onDelete}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${name}`}>
+        <Ionicons name="close" size={18} color={colors.textMuted} />
+      </Pressable>
+    </Pressable>
+  );
+}
+
+const FILTER_NAME_MAX_LENGTH = 30;
+
+function SaveFilterDialog({
+  visible,
+  defaultName,
+  onCancel,
+  onSave,
+}: {
+  visible: boolean;
+  defaultName: string;
+  onCancel: () => void;
+  onSave: (name: string) => void;
+}) {
+  const colors = useColors();
+  const [name, setName] = useState(defaultName);
+
+  useEffect(() => {
+    if (visible) {
+      setName(defaultName);
+    }
+  }, [defaultName, visible]);
+
+  const submit = () => onSave(name.trim() || defaultName);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cancel saving filter"
+          onPress={onCancel}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            backgroundColor: colors.overlay,
+          }}
+        />
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: 16,
+            padding: 16,
+            gap: 14,
+          }}>
+          <Text style={{ fontSize: 17, fontWeight: '600' }}>Save filter</Text>
+          <ThemedTextInput
+            value={name}
+            onChangeText={setName}
+            placeholder={defaultName}
+            maxLength={FILTER_NAME_MAX_LENGTH}
+            autoFocus
+            selectTextOnFocus
+            returnKeyType="done"
+            onSubmitEditing={submit}
+            style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 }}
+          />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable
+              onPress={onCancel}
+              accessibilityRole="button"
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingVertical: 12,
+              }}>
+              <Text>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={submit}
+              accessibilityRole="button"
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                backgroundColor: colors.accent,
+                borderRadius: 10,
+                paddingVertical: 12,
+              }}>
+              <Text style={{ color: colors.background, fontWeight: '600' }}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -1,6 +1,6 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus } from './types';
+import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus, SavedFilterTab } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -61,6 +61,16 @@ export const catalog = sqliteTable('catalog', {
   synopsis: text('synopsis'),
   releaseDate: text('release_date'),
 });
+
+export const savedFilters = sqliteTable('saved_filters', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').notNull(),
+  tab: text('tab').notNull().$type<SavedFilterTab>(),
+  name: text('name').notNull(),
+  // JSON-encoded BrowseFilters from the filter sheet.
+  filters: text('filters').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [index('saved_filters_user_tab_idx').on(table.userId, table.tab)]);
 
 export const feedNotifications = sqliteTable('feed_notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),

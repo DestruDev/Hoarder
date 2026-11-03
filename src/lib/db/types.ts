@@ -120,6 +120,18 @@ export type AppSettings = {
   libraryExpanded: ItemStatus[];
 };
 
+export type SavedFilterTab = 'library' | 'explore';
+
+export const SAVED_FILTER_LIMIT = 5;
+
+export type SavedFilter = {
+  id: number;
+  tab: SavedFilterTab;
+  name: string;
+  filters: string;
+  createdAt: string;
+};
+
 export type CatalogItem = {
   id: number;
   title: string;
