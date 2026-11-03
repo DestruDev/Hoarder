@@ -20,12 +20,16 @@ type AppSettingsContextValue = AppSettings & {
 
 const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
-export function AppSettingsProvider({ children }: { children: ReactNode }) {
+export function AppSettingsProvider({ userId, children }: { userId: string | null; children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     let cancelled = false;
 
     getAppSettings()
@@ -41,15 +45,18 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   const patchSettings = useCallback((patch: Partial<AppSettings>) => {
     const next = { ...settingsRef.current, ...patch };
     setSettings(next);
+    if (!userId) {
+      return;
+    }
     saveAppSettings(next).catch((error: unknown) => {
       console.error('[Hoarder] Failed to save settings:', error);
     });
-  }, []);
+  }, [userId]);
 
   const value = useMemo<AppSettingsContextValue>(
     () => ({

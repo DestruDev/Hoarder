@@ -1,9 +1,10 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import type { CollectionView, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id'),
   title: text('title').notNull(),
   mediaType: text('media_type').notNull().$type<MediaType>(),
   status: text('status').notNull().$type<ItemStatus>(),
@@ -22,10 +23,11 @@ export const items = sqliteTable('items', {
   startDate: text('start_date'),
   finishDate: text('finish_date'),
   updatedAt: text('updated_at'),
-});
+}, (table) => [index('items_user_id_idx').on(table.userId)]);
 
 export const profile = sqliteTable('profile', {
   id: integer('id').primaryKey(),
+  userId: text('user_id').unique(),
   name: text('name'),
   description: text('description'),
   avatarUrl: text('avatar_url'),
@@ -33,6 +35,7 @@ export const profile = sqliteTable('profile', {
 
 export const appSettings = sqliteTable('app_settings', {
   id: integer('id').primaryKey(),
+  userId: text('user_id').unique(),
   ratingSystem: text('rating_system').notNull().$type<RatingSystem>(),
   libraryView: text('library_view').notNull().default('list').$type<CollectionView>(),
   exploreView: text('explore_view').notNull().default('card').$type<CollectionView>(),

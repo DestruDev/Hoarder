@@ -1,7 +1,10 @@
+import { eq } from 'drizzle-orm';
+
 import { CATALOG_REMOTE_SOURCE_COUNT } from '@/lib/catalog-sources';
 
+import { getActiveUserId } from './active-user';
 import { seedCatalogIfEmpty } from './catalog-seed';
-import { db, sqlite } from './client';
+import { db } from './client';
 import { reportSeedProgress, type OnSeedProgress } from './progress';
 import { getCatalogItems } from './catalog-store';
 import { getItems } from './items';
@@ -277,7 +280,11 @@ export async function seedItems(onProgress?: OnSeedProgress): Promise<Item[]> {
     return [];
   }
 
-  const seeded = await db.insert(items).values(sampleItems).returning();
+  const userId = getActiveUserId();
+  const seeded = await db
+    .insert(items)
+    .values(sampleItems.map((item) => ({ ...item, userId })))
+    .returning();
   reportSeedProgress(onProgress, 'Library seeded', total, total);
   return seeded;
 }
@@ -293,13 +300,7 @@ export async function seedIfEmpty(): Promise<Item[]> {
 
 export async function clearLibrary(): Promise<number> {
   const existing = await getItems();
-  await db.delete(items);
-
-  try {
-    sqlite.execSync("DELETE FROM sqlite_sequence WHERE name = 'items'");
-  } catch {
-    // sqlite_sequence is created after the first insert; ignore if missing.
-  }
+  await db.delete(items).where(eq(items.userId, getActiveUserId()));
 
   return existing.length;
 }

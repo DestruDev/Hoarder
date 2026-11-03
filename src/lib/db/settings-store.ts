@@ -1,8 +1,9 @@
+import { eq } from 'drizzle-orm';
+
+import { getActiveUserId } from './active-user';
 import { db } from './client';
 import { appSettings } from './schema';
 import type { AppSettings, CollectionView, RatingSystem } from './types';
-
-const SETTINGS_ID = 1;
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   ratingSystem: 'decimal',
@@ -30,7 +31,11 @@ function normalizeSettings(input: Partial<AppSettings> | null | undefined): AppS
 }
 
 export async function getAppSettings(): Promise<AppSettings> {
-  const [row] = await db.select().from(appSettings).limit(1);
+  const [row] = await db
+    .select()
+    .from(appSettings)
+    .where(eq(appSettings.userId, getActiveUserId()))
+    .limit(1);
   if (!row) {
     return saveAppSettings(DEFAULT_APP_SETTINGS);
   }
@@ -44,13 +49,13 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
   await db
     .insert(appSettings)
     .values({
-      id: SETTINGS_ID,
+      userId: getActiveUserId(),
       ratingSystem: nextSettings.ratingSystem,
       libraryView: nextSettings.libraryView,
       exploreView: nextSettings.exploreView,
     })
     .onConflictDoUpdate({
-      target: appSettings.id,
+      target: appSettings.userId,
       set: {
         ratingSystem: nextSettings.ratingSystem,
         libraryView: nextSettings.libraryView,

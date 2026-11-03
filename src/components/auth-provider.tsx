@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { setActiveUser } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
 type AuthContextValue = {
@@ -32,13 +33,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Point the local database at this account before any screen can query it.
+    const applySession = async (nextSession: Session | null) => {
+      try {
+        await setActiveUser(nextSession?.user.id ?? null);
+      } catch (error) {
+        console.error('[Hoarder] Failed to switch local data to this account:', error);
+      }
+      setSession(nextSession);
+    };
+
     supabase.auth
       .getSession()
-      .then(({ data }) => setSession(data.session))
+      .then(({ data }) => applySession(data.session))
       .finally(() => setLoading(false));
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      void applySession(nextSession);
     });
 
     return () => data.subscription.unsubscribe();

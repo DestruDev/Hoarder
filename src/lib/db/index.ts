@@ -1,3 +1,4 @@
+export { getActiveUserId, setActiveUser } from './active-user';
 export { DATABASE_NAME, db, sqlite } from './client';
 export {
   enrichCatalogMetadataIfNeeded,

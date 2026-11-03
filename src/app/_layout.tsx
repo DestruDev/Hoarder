@@ -117,10 +117,8 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <AuthProvider>
-        <AppSettingsProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </AppSettingsProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
       </AuthProvider>
     </ThemeProvider>
   );
@@ -133,38 +131,42 @@ function RootNavigator() {
     return <LoadingScreen progress={{ label: 'Signing in…', current: 0, total: 0 }} />;
   }
 
-  const signedIn = session != null;
+  const userId = session?.user.id ?? null;
+  const signedIn = userId != null;
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerTitleStyle: { color: colors.text },
-        contentStyle: { backgroundColor: colors.background },
-      }}>
-      <Stack.Protected guard={signedIn}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
-        <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
-        <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
-        <Stack.Screen
-          name="edit/[id]"
-          options={{
-            title: 'Edit',
-            presentation: 'transparentModal',
-            animation: 'none',
-            headerShown: false,
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
-        />
-        <Stack.Screen name="form" options={{ title: 'Item' }} />
-        <Stack.Screen name="debug" options={{ title: 'Debug' }} />
-        <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
-      </Stack.Protected>
-      <Stack.Protected guard={!signedIn}>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-      </Stack.Protected>
-      <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
-    </Stack>
+    // Keyed by account so settings reset to defaults instead of leaking between users.
+    <AppSettingsProvider key={userId ?? 'signed-out'} userId={userId}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerTitleStyle: { color: colors.text },
+          contentStyle: { backgroundColor: colors.background },
+        }}>
+        <Stack.Protected guard={signedIn}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Feed' }} />
+          <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
+          <Stack.Screen name="catalog/[id]" options={{ title: 'Title' }} />
+          <Stack.Screen
+            name="edit/[id]"
+            options={{
+              title: 'Edit',
+              presentation: 'transparentModal',
+              animation: 'none',
+              headerShown: false,
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen name="form" options={{ title: 'Item' }} />
+          <Stack.Screen name="debug" options={{ title: 'Debug' }} />
+          <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!signedIn}>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
+      </Stack>
+    </AppSettingsProvider>
   );
 }

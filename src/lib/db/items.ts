@@ -1,11 +1,16 @@
 import { and, desc, eq, type SQL } from 'drizzle-orm';
 
+import { getActiveUserId } from './active-user';
 import { db } from './client';
 import { items } from './schema';
 import type { CatalogItem, Item, ItemFilters, ItemStatus, MediaType, NewItemInput } from './types';
 
+function ownedItem(id: number): SQL | undefined {
+  return and(eq(items.id, id), eq(items.userId, getActiveUserId()));
+}
+
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [eq(items.userId, getActiveUserId())];
 
   if (filters.mediaType) {
     conditions.push(eq(items.mediaType, filters.mediaType));
@@ -13,10 +18,6 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
 
   if (filters.status) {
     conditions.push(eq(items.status, filters.status));
-  }
-
-  if (conditions.length === 0) {
-    return db.select().from(items).orderBy(desc(items.dateAdded));
   }
 
   return db
@@ -27,7 +28,7 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
 }
 
 export async function getItemById(id: number): Promise<Item | undefined> {
-  const [item] = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  const [item] = await db.select().from(items).where(ownedItem(id)).limit(1);
   return item;
 }
 
@@ -38,7 +39,13 @@ export async function findItemByTitleAndType(
   const [item] = await db
     .select()
     .from(items)
-    .where(and(eq(items.title, title), eq(items.mediaType, mediaType)))
+    .where(
+      and(
+        eq(items.userId, getActiveUserId()),
+        eq(items.title, title),
+        eq(items.mediaType, mediaType),
+      ),
+    )
     .limit(1);
 
   return item;
@@ -78,6 +85,7 @@ export async function createItem(input: NewItemInput): Promise<Item> {
     .insert(items)
     .values({
       ...input,
+      userId: getActiveUserId(),
       dateAdded: input.dateAdded ?? now,
       updatedAt: now,
     })
@@ -97,12 +105,12 @@ export async function updateItem(
   const [updated] = await db
     .update(items)
     .set({ ...input, updatedAt: new Date().toISOString() })
-    .where(eq(items.id, id))
+    .where(ownedItem(id))
     .returning();
   return updated;
 }
 
 export async function deleteItem(id: number): Promise<boolean> {
-  const deleted = await db.delete(items).where(eq(items.id, id)).returning({ id: items.id });
+  const deleted = await db.delete(items).where(ownedItem(id)).returning({ id: items.id });
   return deleted.length > 0;
 }
