@@ -8,6 +8,7 @@ import {
   type AppSettings,
   type CollectionView,
   type ColorScheme,
+  type ItemStatus,
   type RatingSystem,
 } from '@/lib/db';
 import { formatScore, formatScoreOutOfTen } from '@/lib/status-labels';
@@ -17,6 +18,7 @@ type AppSettingsContextValue = AppSettings & {
   setLibraryView: (libraryView: CollectionView) => void;
   setExploreView: (exploreView: CollectionView) => void;
   setColorScheme: (colorScheme: ColorScheme) => void;
+  setLibraryExpanded: (libraryExpanded: ItemStatus[]) => void;
   formatScore: (rating: number) => string;
   formatScoreOutOfTen: (rating: number) => string;
 };
@@ -68,6 +70,7 @@ export function AppSettingsProvider({ userId, children }: { userId: string | nul
       setLibraryView: (libraryView) => patchSettings({ libraryView }),
       setExploreView: (exploreView) => patchSettings({ exploreView }),
       setColorScheme: (colorScheme) => patchSettings({ colorScheme }),
+      setLibraryExpanded: (libraryExpanded) => patchSettings({ libraryExpanded }),
       formatScore: (rating) => formatScore(rating, settings.ratingSystem),
       formatScoreOutOfTen: (rating) => formatScoreOutOfTen(rating, settings.ratingSystem),
     }),

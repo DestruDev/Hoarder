@@ -117,6 +117,7 @@ export type AppSettings = {
   libraryView: CollectionView;
   exploreView: CollectionView;
   colorScheme: ColorScheme;
+  libraryExpanded: ItemStatus[];
 };
 
 export type CatalogItem = {

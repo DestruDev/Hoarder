@@ -3,13 +3,14 @@ import { eq } from 'drizzle-orm';
 import { getActiveUserId } from './active-user';
 import { db } from './client';
 import { appSettings } from './schema';
-import type { AppSettings, CollectionView, ColorScheme, RatingSystem } from './types';
+import { ITEM_STATUSES, type AppSettings, type CollectionView, type ColorScheme, type ItemStatus, type RatingSystem } from './types';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   ratingSystem: 'decimal',
   libraryView: 'list',
   exploreView: 'card',
   colorScheme: 'dark',
+  libraryExpanded: ['in_progress'],
 };
 
 function normalizeRatingSystem(value: string | null | undefined): RatingSystem {
@@ -27,12 +28,26 @@ function normalizeColorScheme(value: string | null | undefined): ColorScheme {
   return value === 'light' ? 'light' : 'dark';
 }
 
-function normalizeSettings(input: Partial<AppSettings> | null | undefined): AppSettings {
+function normalizeLibraryExpanded(value: string | ItemStatus[] | null | undefined): ItemStatus[] {
+  if (value == null) {
+    return DEFAULT_APP_SETTINGS.libraryExpanded;
+  }
+
+  const selected = new Set(typeof value === 'string' ? value.split(',') : value);
+  return ITEM_STATUSES.filter((status) => selected.has(status));
+}
+
+type StoredSettings = Omit<Partial<AppSettings>, 'libraryExpanded'> & {
+  libraryExpanded?: string | ItemStatus[] | null;
+};
+
+function normalizeSettings(input: StoredSettings | null | undefined): AppSettings {
   return {
     ratingSystem: normalizeRatingSystem(input?.ratingSystem),
     libraryView: normalizeCollectionView(input?.libraryView, DEFAULT_APP_SETTINGS.libraryView),
     exploreView: normalizeCollectionView(input?.exploreView, DEFAULT_APP_SETTINGS.exploreView),
     colorScheme: normalizeColorScheme(input?.colorScheme),
+    libraryExpanded: normalizeLibraryExpanded(input?.libraryExpanded),
   };
 }
 
@@ -60,6 +75,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
       libraryView: nextSettings.libraryView,
       exploreView: nextSettings.exploreView,
       colorScheme: nextSettings.colorScheme,
+      libraryExpanded: nextSettings.libraryExpanded.join(','),
     })
     .onConflictDoUpdate({
       target: appSettings.userId,
@@ -68,6 +84,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
         libraryView: nextSettings.libraryView,
         exploreView: nextSettings.exploreView,
         colorScheme: nextSettings.colorScheme,
+        libraryExpanded: nextSettings.libraryExpanded.join(','),
       },
     });
 

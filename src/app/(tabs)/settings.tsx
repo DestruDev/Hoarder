@@ -36,7 +36,7 @@ export default function SettingsScreen() {
   const visibleSettings = settings.filter((setting) =>
     setting.id === 'preferences'
       ? matchesSearchText(
-          'Preferences rating system decimal whole library explore list card view',
+          'Preferences appearance dark light mode theme rating system decimal whole library explore list card view expanded collapsed sections',
           query,
         )
       : matchesSearchText(setting.title, query),

@@ -1,0 +1,1 @@
+ALTER TABLE `app_settings` ADD `library_expanded` text DEFAULT 'in_progress' NOT NULL;

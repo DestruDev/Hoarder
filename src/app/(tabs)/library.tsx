@@ -39,7 +39,7 @@ export default function LibraryScreen() {
   const colors = useColors();
   const { query, browse } = useMediaQuery();
   const { filter, sort, statusFilter, releaseFilter, genreFilter, dateRules } = browse.library;
-  const { libraryView } = useAppSettings();
+  const { libraryView, libraryExpanded } = useAppSettings();
   const { posterWidth, posterHeight } = usePosterSize();
   const [items, setItems] = useState<Item[]>([]);
   const [catalogByKey, setCatalogByKey] = useState<Map<string, CatalogItem>>(() =>
@@ -98,10 +98,15 @@ export default function LibraryScreen() {
     items: sortedItems.filter((item) => item.status === status),
   })).filter((group) => group.items.length > 0);
 
+  // Sections start from the user's default; taps override it for this session.
+  function isExpanded(status: ItemStatus) {
+    return expanded[status] ?? libraryExpanded.includes(status);
+  }
+
   function toggleStatus(status: ItemStatus) {
     setExpanded((current) => ({
       ...current,
-      [status]: !current[status],
+      [status]: !isExpanded(status),
     }));
   }
 
@@ -199,7 +204,7 @@ export default function LibraryScreen() {
             key={group.status}
             title={STATUS_LABELS[group.status]}
             count={group.items.length}
-            open={isSearching || Boolean(expanded[group.status])}
+            open={isSearching || isExpanded(group.status)}
             canToggle={!isSearching}
             onToggle={() => toggleStatus(group.status)}>
             {libraryView === 'card' ? (
@@ -252,7 +257,8 @@ function LibraryStatusGroup({
 }) {
   const colors = useColors();
   const highlight = useRef(new Animated.Value(0)).current;
-  const progress = useRef(new Animated.Value(0)).current;
+  // Start at the initial state so sections that mount open don't animate in.
+  const progress = useRef(new Animated.Value(open ? 1 : 0)).current;
   const [shown, setShown] = useState(open);
   const [contentHeight, setContentHeight] = useState(0);
 

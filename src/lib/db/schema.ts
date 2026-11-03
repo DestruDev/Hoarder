@@ -40,6 +40,8 @@ export const appSettings = sqliteTable('app_settings', {
   libraryView: text('library_view').notNull().default('list').$type<CollectionView>(),
   exploreView: text('explore_view').notNull().default('card').$type<CollectionView>(),
   colorScheme: text('color_scheme').notNull().default('dark').$type<ColorScheme>(),
+  // Comma-separated ItemStatus list of library sections that start expanded.
+  libraryExpanded: text('library_expanded').notNull().default('in_progress'),
 });
 
 export const catalog = sqliteTable('catalog', {

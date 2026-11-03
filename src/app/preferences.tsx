@@ -7,10 +7,13 @@ import { ScreenScrollView, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import {
   COLLECTION_VIEWS,
+  ITEM_STATUSES,
   RATING_SYSTEMS,
   type CollectionView,
+  type ItemStatus,
   type RatingSystem,
 } from '@/lib/db';
+import { STATUS_LABELS } from '@/lib/status-labels';
 
 const PREFERENCE_TABS = ['appearance', 'feed', 'library', 'explore', 'profile'] as const;
 
@@ -84,6 +87,66 @@ function ChoiceRow<T extends string>({
   );
 }
 
+function MultiChoiceRow<T extends string>({
+  label,
+  values,
+  options,
+  onChange,
+}: {
+  label: string;
+  values: T[];
+  options: { id: T; title: string }[];
+  onChange: (values: T[]) => void;
+}) {
+  const colors = useColors();
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+        gap: 12,
+      }}>
+      <Text>{label}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {options.map((option) => {
+          const selected = values.includes(option.id);
+
+          return (
+            <Pressable
+              key={option.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
+              onPress={() =>
+                onChange(
+                  selected
+                    ? values.filter((value) => value !== option.id)
+                    : options.map((o) => o.id).filter((id) => id === option.id || values.includes(id)),
+                )
+              }
+              style={{
+                flexBasis: '45%',
+                flexGrow: 1,
+                alignItems: 'center',
+                backgroundColor: selected ? colors.background : colors.surface,
+                borderColor: selected ? colors.accent : colors.border,
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingVertical: 12,
+              }}>
+              <Text>{option.title}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function ToggleRow({
   label,
   value,
@@ -131,6 +194,8 @@ export default function PreferencesScreen() {
     setExploreView,
     colorScheme,
     setColorScheme,
+    libraryExpanded,
+    setLibraryExpanded,
   } = useAppSettings();
 
   return (
@@ -196,6 +261,15 @@ export default function PreferencesScreen() {
               title: RATING_SYSTEM_LABELS[system],
             }))}
             onChange={setRatingSystem}
+          />
+          <MultiChoiceRow<ItemStatus>
+            label="Expanded by default"
+            values={libraryExpanded}
+            options={ITEM_STATUSES.map((status) => ({
+              id: status,
+              title: STATUS_LABELS[status],
+            }))}
+            onChange={setLibraryExpanded}
           />
         </View>
       ) : null}
