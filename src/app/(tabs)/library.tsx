@@ -115,15 +115,25 @@ export default function LibraryScreen() {
       <Pressable
         onPress={() => setNotesItem(item)}
         hitSlop={8}
-        style={{
-          padding: 8,
-          ...(libraryView === 'card'
-            ? { position: 'absolute', top: 4, right: 0 }
-            : null),
-        }}
+        style={
+          libraryView === 'card'
+            ? {
+                position: 'absolute',
+                top: 8,
+                right: 4,
+                padding: 6,
+                borderRadius: 999,
+                backgroundColor: colors.imageBadgeBackground,
+              }
+            : { padding: 8 }
+        }
         accessibilityRole="button"
         accessibilityLabel="Open notes">
-        <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
+        <Ionicons
+          name="chatbubble-outline"
+          size={libraryView === 'card' ? 16 : 18}
+          color={libraryView === 'card' ? colors.imageBadgeIcon : colors.textMuted}
+        />
       </Pressable>
     ) : null;
 

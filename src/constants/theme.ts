@@ -15,6 +15,9 @@ const darkColors = {
   placeholder: '#888888',
   danger: '#ff4d4d',
   overlay: 'rgba(0, 0, 0, 0.6)',
+  // Badges drawn on top of cover art, so they stay the same in both themes.
+  imageBadgeBackground: 'rgba(0, 0, 0, 0.55)',
+  imageBadgeIcon: '#ffffff',
 };
 
 export type ThemeColors = typeof darkColors;
@@ -31,6 +34,8 @@ const lightColors: ThemeColors = {
   placeholder: '#8a8a8a',
   danger: '#d92d2d',
   overlay: 'rgba(0, 0, 0, 0.4)',
+  imageBadgeBackground: 'rgba(0, 0, 0, 0.55)',
+  imageBadgeIcon: '#ffffff',
 };
 
 export const palettes: Record<ColorScheme, ThemeColors> = {
