@@ -53,7 +53,7 @@ type TvmazeSeason = {
   episodeOrder?: number | null;
 };
 
-type TvmazeShow = {
+export type TvmazeShow = {
   name?: string | null;
   status?: string | null;
   premiered?: string | null;
@@ -132,7 +132,7 @@ function countEpisodes(seasons: TvmazeSeason[] | null | undefined): number | nul
   return counted ? total : null;
 }
 
-function mapShow(show: TvmazeShow | null | undefined): NewCatalogItem | null {
+export function mapShow(show: TvmazeShow | null | undefined): NewCatalogItem | null {
   const title = show?.name?.trim();
   const coverImageUrl = show?.image?.original || show?.image?.medium || null;
 

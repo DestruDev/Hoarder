@@ -36,7 +36,7 @@ const ExploreEntry = memo(function ExploreEntry({
   view: CollectionView;
 }) {
   return (
-    <Link href={{ pathname: '/catalog/[id]', params: { id: String(item.id) } }} asChild>
+    <Link href={{ pathname: '/catalog/[id]', params: { id: String(item.id), title: item.title } }} asChild>
       <Pressable>
         {view === 'list' ? (
           <MediaRow

@@ -157,7 +157,7 @@ export default function FeedScreen() {
                 }}>
                 {catalogItem ? (
                   <Link
-                    href={{ pathname: '/catalog/[id]', params: { id: String(catalogItem.id) } }}
+                    href={{ pathname: '/catalog/[id]', params: { id: String(catalogItem.id), title: catalogItem.title } }}
                     asChild>
                     <Pressable
                       accessibilityRole="button"

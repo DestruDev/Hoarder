@@ -165,7 +165,7 @@ function isGraphicNovel(result: ItunesSearchResult): boolean {
   return (result.genres ?? []).some((genre) => /comic|graphic novel/i.test(genre));
 }
 
-async function searchComic(title: string): Promise<NewCatalogItem | null> {
+export async function searchComic(title: string): Promise<NewCatalogItem | null> {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=ebook&limit=5`;
   const payload = (await fetchJson(url)) as ItunesSearch;
   const results = payload.results ?? [];
@@ -182,6 +182,25 @@ async function searchComic(title: string): Promise<NewCatalogItem | null> {
     mediaType: 'comic',
     coverImageUrl,
     mangaOrigin: 'american',
+    globalRating: scoreOutOfTen(match.averageUserRating, 5),
+    ...searchMetadata(match),
+  };
+}
+
+export async function searchBook(title: string): Promise<NewCatalogItem | null> {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=ebook&limit=1`;
+  const payload = (await fetchJson(url)) as ItunesSearch;
+  const match = payload.results?.find((result) => result.artworkUrl100);
+  const coverImageUrl = itunesArtwork(match?.artworkUrl100);
+
+  if (!match || !coverImageUrl) {
+    return null;
+  }
+
+  return {
+    title,
+    mediaType: 'book',
+    coverImageUrl,
     globalRating: scoreOutOfTen(match.averageUserRating, 5),
     ...searchMetadata(match),
   };
@@ -209,7 +228,7 @@ export async function lookupItunesMovieCover(title: string): Promise<string | nu
   return itunesArtwork(match?.artworkUrl100);
 }
 
-async function searchMovie(title: string): Promise<NewCatalogItem | null> {
+export async function searchMovie(title: string): Promise<NewCatalogItem | null> {
   const match = await lookupItunesMovie(title);
   const coverImageUrl = itunesArtwork(match?.artworkUrl100);
   if (!match || !coverImageUrl) {

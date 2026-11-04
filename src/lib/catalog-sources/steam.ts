@@ -36,11 +36,11 @@ function ownerCount(owners: string | null | undefined): number {
   return Number.isFinite(low) ? low : 0;
 }
 
-function steamCoverUrl(appId: number): string {
+export function steamCoverUrl(appId: number): string {
   return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`;
 }
 
-async function attachStoreDetails(
+export async function attachStoreDetails(
   item: NewCatalogItem,
   appId: number,
 ): Promise<NewCatalogItem> {

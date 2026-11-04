@@ -72,6 +72,15 @@ export const savedFilters = sqliteTable('saved_filters', {
   createdAt: text('created_at').notNull(),
 }, (table) => [index('saved_filters_user_tab_idx').on(table.userId, table.tab)]);
 
+// Related-title lists from AniList/Wikidata, kept forever once fetched.
+export const relatedMedia = sqliteTable('related_media', {
+  // `${mediaType}:${lowercased title}` of the title the list belongs to.
+  sourceKey: text('source_key').primaryKey(),
+  // JSON-encoded RelatedMedia[].
+  related: text('related').notNull(),
+  fetchedAt: text('fetched_at').notNull(),
+});
+
 export const feedNotifications = sqliteTable('feed_notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),

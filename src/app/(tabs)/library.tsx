@@ -140,7 +140,7 @@ export default function LibraryScreen() {
     if (libraryView === 'card') {
       return (
         <View key={item.id} style={{ width: posterWidth }}>
-          <Link href={{ pathname: '/item/[id]', params: { id: String(item.id) } }} asChild>
+          <Link href={{ pathname: '/item/[id]', params: { id: String(item.id), title: item.title } }} asChild>
             <Pressable>
               <MediaPoster
                 title={item.title}
@@ -166,7 +166,7 @@ export default function LibraryScreen() {
           paddingVertical: 2,
           gap: 4,
         }}>
-        <Link href={{ pathname: '/item/[id]', params: { id: String(item.id) } }} asChild>
+        <Link href={{ pathname: '/item/[id]', params: { id: String(item.id), title: item.title } }} asChild>
           <Pressable style={{ flex: 1 }}>
             <MediaRow
               title={item.title}

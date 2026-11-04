@@ -4,8 +4,10 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ScreenScrollView, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
+import { forgetRelatedMedia } from '@/lib/catalog-sources/related';
 import {
   clearLibrary,
+  clearRelatedMedia,
   resetAndSeed,
   resetAndSeedCatalog,
   resetAndSeedFeed,
@@ -124,6 +126,18 @@ export default function DebugScreen() {
           return seeded.length === 0
             ? 'No catalog titles to add. Reset & seed the catalog first.'
             : `Reset complete. Seeded ${seeded.length} library items from the catalog.`;
+        }),
+    },
+    {
+      id: 'clear-related',
+      title: 'Clear saved related titles',
+      onPress: () =>
+        runCommand('clear-related', async () => {
+          const removed = await clearRelatedMedia();
+          forgetRelatedMedia();
+          return removed === 0
+            ? 'No related titles saved yet.'
+            : `Cleared related titles for ${removed} ${removed === 1 ? 'title' : 'titles'}. They'll re-fetch when opened.`;
         }),
     },
     {

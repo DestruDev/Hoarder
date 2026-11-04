@@ -11,7 +11,7 @@ const SKIP_FORMATS = new Set(['MUSIC', 'NOVEL']);
 const PER_PAGE = 50;
 const PAGE_COUNT = Math.ceil(CATALOG_SECTION_LIMIT / PER_PAGE);
 
-const MEDIA_FIELDS = `
+export const MEDIA_FIELDS = `
       title {
         english
         romaji
@@ -78,7 +78,7 @@ type AnilistTitle = {
   native?: string | null;
 };
 
-type AnilistMedia = {
+export type AnilistMedia = {
   title?: AnilistTitle | null;
   format?: string | null;
   status?: string | null;
@@ -175,7 +175,7 @@ function mapReleaseStatus(status: string | null | undefined): ReleaseStatus | nu
   }
 }
 
-function mapComicOrigin(country: string | null | undefined): ComicOrigin | null {
+export function mapComicOrigin(country: string | null | undefined): ComicOrigin | null {
   switch (country) {
     case 'JP':
       return 'japanese';
@@ -189,7 +189,7 @@ function mapComicOrigin(country: string | null | undefined): ComicOrigin | null 
   }
 }
 
-function mapMedia(media: AnilistMedia, mediaType: 'anime' | 'comic'): NewCatalogItem | null {
+export function mapMedia(media: AnilistMedia, mediaType: 'anime' | 'comic'): NewCatalogItem | null {
   if (media.format && SKIP_FORMATS.has(media.format)) {
     return null;
   }
@@ -233,7 +233,10 @@ function mapPage(payload: AnilistResponse, mediaType: 'anime' | 'comic'): NewCat
   return items;
 }
 
-async function fetchAnilist(query: string, variables: Record<string, unknown>): Promise<AnilistResponse> {
+export async function fetchAnilist<T = AnilistResponse>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
   return (await fetchJson(ANILIST_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -241,7 +244,7 @@ async function fetchAnilist(query: string, variables: Record<string, unknown>): 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ query, variables }),
-  })) as AnilistResponse;
+  })) as T;
 }
 
 async function fetchAnilistSection(

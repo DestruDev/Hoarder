@@ -11,7 +11,8 @@ import {
 } from '@/lib/db';
 
 export default function CatalogDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // The opener passes the title along so the header is right before the row loads.
+  const { id, title: titleParam } = useLocalSearchParams<{ id: string; title?: string }>();
   const itemId = Number(id);
 
   const [item, setItem] = useState<CatalogItem | undefined>();
@@ -67,7 +68,7 @@ export default function CatalogDetailScreen() {
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Title' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Title' }} />
         <Text>{error}</Text>
       </Screen>
     );
@@ -76,7 +77,7 @@ export default function CatalogDetailScreen() {
   if (!loaded) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Title' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Title' }} />
         <Text>Loading...</Text>
       </Screen>
     );
@@ -85,7 +86,7 @@ export default function CatalogDetailScreen() {
   if (!item) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Title' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Title' }} />
         <Text>Title not found.</Text>
       </Screen>
     );

@@ -47,7 +47,7 @@ type TmdbPage = {
 
 type MappedTmdbItem = NewCatalogItem & { tmdbId?: number };
 
-function tmdbApiKey(): string | undefined {
+export function tmdbApiKey(): string | undefined {
   const key = process.env.EXPO_PUBLIC_TMDB_API_KEY;
   const trimmed = key?.trim();
   return trimmed ? trimmed : undefined;
@@ -59,7 +59,7 @@ function mapTitle(entry: TmdbMedia): string | null {
   return trimmed ? trimmed : null;
 }
 
-function mapPoster(path: string | null | undefined): string | null {
+export function mapPoster(path: string | null | undefined): string | null {
   if (!path) {
     return null;
   }

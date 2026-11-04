@@ -12,7 +12,8 @@ import {
 
 export default function ItemDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // The opener passes the title along so the header is right before the row loads.
+  const { id, title: titleParam } = useLocalSearchParams<{ id: string; title?: string }>();
   const itemId = Number(id);
 
   const [item, setItem] = useState<Item | undefined>();
@@ -86,7 +87,7 @@ export default function ItemDetailScreen() {
   if (error) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Item' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Item' }} />
         <Text>{error}</Text>
       </Screen>
     );
@@ -95,7 +96,7 @@ export default function ItemDetailScreen() {
   if (!loaded) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Item' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Item' }} />
         <Text>Loading...</Text>
       </Screen>
     );
@@ -104,7 +105,7 @@ export default function ItemDetailScreen() {
   if (!item) {
     return (
       <Screen style={{ padding: 16 }}>
-        <Stack.Screen options={{ title: 'Item' }} />
+        <Stack.Screen options={{ title: titleParam ?? 'Item' }} />
         <Text>Item not found.</Text>
       </Screen>
     );

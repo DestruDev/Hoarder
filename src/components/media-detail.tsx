@@ -5,6 +5,7 @@ import { Pressable, useWindowDimensions, View } from 'react-native';
 import { ItemActionsMenu } from '@/components/item-actions-menu';
 import { LibraryStatusControl } from '@/components/library-status-control';
 import { MediaCover } from '@/components/media-cover';
+import { RelatedMediaSection } from '@/components/related-media';
 import { ScreenScrollView, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import { isChapteredMediaType, isPagedMediaType, isShowMediaType, type CatalogItem, type Item } from '@/lib/db';
@@ -117,6 +118,7 @@ export function MediaDetail({
       {media.synopsis ? (
         <Text style={{ color: colors.textMuted, lineHeight: 20 }}>{media.synopsis}</Text>
       ) : null}
+      <RelatedMediaSection media={media} />
     </ScreenScrollView>
   );
 }
