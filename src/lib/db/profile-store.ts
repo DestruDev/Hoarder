@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { getActiveUserId } from './active-user';
+import { notifyLocalWrite } from './changes';
 import { db } from './client';
 import { profile } from './schema';
 import type { Profile } from './types';
@@ -31,6 +32,7 @@ export async function saveProfile(input: Profile): Promise<Profile> {
     avatarUrl: normalize(input.avatarUrl),
   };
 
+  const updatedAt = new Date().toISOString();
   await db
     .insert(profile)
     .values({
@@ -38,6 +40,7 @@ export async function saveProfile(input: Profile): Promise<Profile> {
       name: nextProfile.name,
       description: nextProfile.description,
       avatarUrl: nextProfile.avatarUrl,
+      updatedAt,
     })
     .onConflictDoUpdate({
       target: profile.userId,
@@ -45,8 +48,10 @@ export async function saveProfile(input: Profile): Promise<Profile> {
         name: nextProfile.name,
         description: nextProfile.description,
         avatarUrl: nextProfile.avatarUrl,
+        updatedAt,
       },
     });
 
+  notifyLocalWrite();
   return nextProfile;
 }

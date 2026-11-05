@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { getProfile, saveProfile, type Profile } from '@/lib/db';
+import { useSyncVersion } from '@/lib/sync';
 
 const PLACEHOLDER_NAME = 'Username';
 
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
     });
   }, [navigation, profile.name]);
 
+  const syncVersion = useSyncVersion();
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -54,7 +56,7 @@ export default function ProfileScreen() {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [syncVersion]),
   );
 
   async function handleSave() {

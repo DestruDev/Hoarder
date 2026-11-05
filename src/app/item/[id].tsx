@@ -9,6 +9,7 @@ import {
   type CatalogItem,
   type Item,
 } from '@/lib/db';
+import { useSyncVersion } from '@/lib/sync';
 
 export default function ItemDetailScreen() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function ItemDetailScreen() {
     Pick<CatalogItem, 'globalRating' | 'season' | 'genres' | 'creator' | 'synopsis'>
   >({ globalRating: null, season: null, genres: null, creator: null, synopsis: null });
 
+  const syncVersion = useSyncVersion();
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -81,7 +83,7 @@ export default function ItemDetailScreen() {
       return () => {
         cancelled = true;
       };
-    }, [itemId]),
+    }, [itemId, syncVersion]),
   );
 
   if (error) {

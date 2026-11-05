@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { setActiveUser } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
+import { startSync } from '@/lib/sync';
 
 type AuthContextValue = {
   session: Session | null;
@@ -54,6 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => data.subscription.unsubscribe();
   }, []);
+
+  const userId = session?.user.id ?? null;
+  useEffect(() => (userId ? startSync(userId) : undefined), [userId]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

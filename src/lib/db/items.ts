@@ -1,16 +1,23 @@
-import { and, desc, eq, type SQL } from 'drizzle-orm';
+import { randomUUID } from 'expo-crypto';
+import { and, desc, eq, isNull, type SQL } from 'drizzle-orm';
 
 import { getActiveUserId } from './active-user';
+import { notifyLocalWrite } from './changes';
 import { db } from './client';
 import { items } from './schema';
 import type { CatalogItem, Item, ItemFilters, ItemStatus, MediaType, NewItemInput } from './types';
 
+// Soft-deleted rows stay in the table until synced, so every read skips them.
+function ownedItems(): SQL | undefined {
+  return and(eq(items.userId, getActiveUserId()), isNull(items.deletedAt));
+}
+
 function ownedItem(id: number): SQL | undefined {
-  return and(eq(items.id, id), eq(items.userId, getActiveUserId()));
+  return and(eq(items.id, id), ownedItems());
 }
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  const conditions: SQL[] = [eq(items.userId, getActiveUserId())];
+  const conditions: (SQL | undefined)[] = [ownedItems()];
 
   if (filters.mediaType) {
     conditions.push(eq(items.mediaType, filters.mediaType));
@@ -41,7 +48,7 @@ export async function findItemByTitleAndType(
     .from(items)
     .where(
       and(
-        eq(items.userId, getActiveUserId()),
+        ownedItems(),
         eq(items.title, title),
         eq(items.mediaType, mediaType),
       ),
@@ -86,6 +93,7 @@ export async function createItem(input: NewItemInput): Promise<Item> {
     .values({
       ...input,
       userId: getActiveUserId(),
+      syncId: randomUUID(),
       dateAdded: input.dateAdded ?? now,
       updatedAt: now,
     })
@@ -95,6 +103,7 @@ export async function createItem(input: NewItemInput): Promise<Item> {
     throw new Error('Failed to create item');
   }
 
+  notifyLocalWrite();
   return created;
 }
 
@@ -107,10 +116,17 @@ export async function updateItem(
     .set({ ...input, updatedAt: new Date().toISOString() })
     .where(ownedItem(id))
     .returning();
+  notifyLocalWrite();
   return updated;
 }
 
 export async function deleteItem(id: number): Promise<boolean> {
-  const deleted = await db.delete(items).where(ownedItem(id)).returning({ id: items.id });
+  const now = new Date().toISOString();
+  const deleted = await db
+    .update(items)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(ownedItem(id))
+    .returning({ id: items.id });
+  notifyLocalWrite();
   return deleted.length > 0;
 }

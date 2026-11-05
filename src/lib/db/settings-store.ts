@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { getActiveUserId } from './active-user';
+import { notifyLocalWrite } from './changes';
 import { db } from './client';
 import { appSettings } from './schema';
 import { ITEM_STATUSES, type AppSettings, type CollectionView, type ColorScheme, type ItemStatus, type RatingSystem } from './types';
@@ -58,13 +59,20 @@ export async function getAppSettings(): Promise<AppSettings> {
     .where(eq(appSettings.userId, getActiveUserId()))
     .limit(1);
   if (!row) {
-    return saveAppSettings(DEFAULT_APP_SETTINGS);
+    // Dated at the epoch so a real settings row from another device always wins.
+    return writeAppSettings(DEFAULT_APP_SETTINGS, new Date(0).toISOString());
   }
 
   return normalizeSettings(row);
 }
 
 export async function saveAppSettings(input: AppSettings): Promise<AppSettings> {
+  const saved = await writeAppSettings(input, new Date().toISOString());
+  notifyLocalWrite();
+  return saved;
+}
+
+async function writeAppSettings(input: AppSettings, updatedAt: string): Promise<AppSettings> {
   const nextSettings = normalizeSettings(input);
 
   await db
@@ -76,6 +84,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
       exploreView: nextSettings.exploreView,
       colorScheme: nextSettings.colorScheme,
       libraryExpanded: nextSettings.libraryExpanded.join(','),
+      updatedAt,
     })
     .onConflictDoUpdate({
       target: appSettings.userId,
@@ -85,6 +94,7 @@ export async function saveAppSettings(input: AppSettings): Promise<AppSettings> 
         exploreView: nextSettings.exploreView,
         colorScheme: nextSettings.colorScheme,
         libraryExpanded: nextSettings.libraryExpanded.join(','),
+        updatedAt,
       },
     });
 

@@ -1,8 +1,10 @@
-import { eq } from 'drizzle-orm';
+import { randomUUID } from 'expo-crypto';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { CATALOG_REMOTE_SOURCE_COUNT } from '@/lib/catalog-sources';
 
 import { getActiveUserId } from './active-user';
+import { notifyLocalWrite } from './changes';
 import { seedCatalogIfEmpty } from './catalog-seed';
 import { db } from './client';
 import { reportSeedProgress, type OnSeedProgress } from './progress';
@@ -281,10 +283,12 @@ export async function seedItems(onProgress?: OnSeedProgress): Promise<Item[]> {
   }
 
   const userId = getActiveUserId();
+  const now = new Date().toISOString();
   const seeded = await db
     .insert(items)
-    .values(sampleItems.map((item) => ({ ...item, userId })))
+    .values(sampleItems.map((item) => ({ ...item, userId, syncId: randomUUID(), updatedAt: now })))
     .returning();
+  notifyLocalWrite();
   reportSeedProgress(onProgress, 'Library seeded', total, total);
   return seeded;
 }
@@ -300,7 +304,13 @@ export async function seedIfEmpty(): Promise<Item[]> {
 
 export async function clearLibrary(): Promise<number> {
   const existing = await getItems();
-  await db.delete(items).where(eq(items.userId, getActiveUserId()));
+  // Soft delete so the clear syncs to every device on this account.
+  const now = new Date().toISOString();
+  await db
+    .update(items)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(items.userId, getActiveUserId()), isNull(items.deletedAt)));
+  notifyLocalWrite();
 
   return existing.length;
 }

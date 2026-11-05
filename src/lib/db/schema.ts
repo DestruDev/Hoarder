@@ -5,6 +5,8 @@ import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, Me
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: text('user_id'),
+  // Shared id across devices; the local integer id never leaves this device.
+  syncId: text('sync_id').unique(),
   title: text('title').notNull(),
   mediaType: text('media_type').notNull().$type<MediaType>(),
   status: text('status').notNull().$type<ItemStatus>(),
@@ -23,6 +25,8 @@ export const items = sqliteTable('items', {
   startDate: text('start_date'),
   finishDate: text('finish_date'),
   updatedAt: text('updated_at'),
+  // Soft delete so the deletion can sync to other devices.
+  deletedAt: text('deleted_at'),
 }, (table) => [index('items_user_id_idx').on(table.userId)]);
 
 export const profile = sqliteTable('profile', {
@@ -31,6 +35,7 @@ export const profile = sqliteTable('profile', {
   name: text('name'),
   description: text('description'),
   avatarUrl: text('avatar_url'),
+  updatedAt: text('updated_at'),
 });
 
 export const appSettings = sqliteTable('app_settings', {
@@ -42,6 +47,7 @@ export const appSettings = sqliteTable('app_settings', {
   colorScheme: text('color_scheme').notNull().default('dark').$type<ColorScheme>(),
   // Comma-separated ItemStatus list of library sections that start expanded.
   libraryExpanded: text('library_expanded').notNull().default('in_progress'),
+  updatedAt: text('updated_at'),
 });
 
 export const catalog = sqliteTable('catalog', {
@@ -65,11 +71,14 @@ export const catalog = sqliteTable('catalog', {
 export const savedFilters = sqliteTable('saved_filters', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: text('user_id').notNull(),
+  syncId: text('sync_id').unique(),
   tab: text('tab').notNull().$type<SavedFilterTab>(),
   name: text('name').notNull(),
   // JSON-encoded BrowseFilters from the filter sheet.
   filters: text('filters').notNull(),
   createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at'),
+  deletedAt: text('deleted_at'),
 }, (table) => [index('saved_filters_user_tab_idx').on(table.userId, table.tab)]);
 
 // Related-title lists from AniList/Wikidata, kept forever once fetched.

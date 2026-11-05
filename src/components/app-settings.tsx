@@ -12,6 +12,7 @@ import {
   type RatingSystem,
 } from '@/lib/db';
 import { formatScore, formatScoreOutOfTen } from '@/lib/status-labels';
+import { useSyncVersion } from '@/lib/sync';
 
 type AppSettingsContextValue = AppSettings & {
   setRatingSystem: (ratingSystem: RatingSystem) => void;
@@ -30,6 +31,7 @@ export function AppSettingsProvider({ userId, children }: { userId: string | nul
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
+  const syncVersion = useSyncVersion();
   useEffect(() => {
     if (!userId) {
       return;
@@ -50,7 +52,7 @@ export function AppSettingsProvider({ userId, children }: { userId: string | nul
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [syncVersion, userId]);
 
   const patchSettings = useCallback((patch: Partial<AppSettings>) => {
     const next = { ...settingsRef.current, ...patch };

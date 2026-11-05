@@ -34,6 +34,7 @@ function indexCatalog(rows: CatalogItem[]): Map<string, CatalogItem> {
   return new Map(rows.map((row) => [catalogKey(row), row]));
 }
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
+import { useSyncVersion } from '@/lib/sync';
 
 export default function LibraryScreen() {
   const colors = useColors();
@@ -49,6 +50,7 @@ export default function LibraryScreen() {
   const [expanded, setExpanded] = useState<Partial<Record<ItemStatus, boolean>>>({});
   const [notesItem, setNotesItem] = useState<Item | null>(null);
 
+  const syncVersion = useSyncVersion();
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -70,7 +72,7 @@ export default function LibraryScreen() {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [syncVersion]),
   );
 
   const visibleItems = items.filter(

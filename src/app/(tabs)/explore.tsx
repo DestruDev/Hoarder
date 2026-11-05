@@ -27,6 +27,7 @@ import {
 } from '@/lib/media-search';
 import { catalogKey, sortEntries } from '@/lib/media-sort';
 import { mediaTypeLabel } from '@/lib/status-labels';
+import { useSyncVersion } from '@/lib/sync';
 
 const ExploreEntry = memo(function ExploreEntry({
   item,
@@ -62,6 +63,7 @@ export default function ExploreScreen() {
   const [libraryByKey, setLibraryByKey] = useState<Map<string, Item>>(() => new Map());
   const [error, setError] = useState<string | null>(null);
 
+  const syncVersion = useSyncVersion();
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -83,7 +85,7 @@ export default function ExploreScreen() {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [syncVersion]),
   );
 
   const sections = useMemo(() => {
