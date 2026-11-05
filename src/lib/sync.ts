@@ -146,16 +146,27 @@ async function pull(userId: string, syncTable: SyncTable): Promise<boolean> {
 }
 
 let syncVersion = 0;
+let dataVersion = 0;
 const versionListeners = new Set<() => void>();
 
-function bumpSyncVersion() {
-  syncVersion += 1;
+function notifyVersionListeners() {
   for (const listener of versionListeners) {
     listener();
   }
 }
 
-function subscribeSyncVersion(listener: () => void) {
+function bumpSyncVersion() {
+  syncVersion += 1;
+  dataVersion += 1;
+  notifyVersionListeners();
+}
+
+onLocalWrite(() => {
+  dataVersion += 1;
+  notifyVersionListeners();
+});
+
+function subscribeVersions(listener: () => void) {
   versionListeners.add(listener);
   return () => {
     versionListeners.delete(listener);
@@ -164,7 +175,14 @@ function subscribeSyncVersion(listener: () => void) {
 
 // Screens add this to their load effect's deps to reload after a sync pulls changes.
 export function useSyncVersion(): number {
-  return useSyncExternalStore(subscribeSyncVersion, () => syncVersion);
+  return useSyncExternalStore(subscribeVersions, () => syncVersion);
+}
+
+// Like useSyncVersion, but also changes on local writes. For lists that should be
+// current the moment they're revealed (e.g. after editing on a pushed screen),
+// load in a plain useEffect keyed on this rather than on focus.
+export function useDataVersion(): number {
+  return useSyncExternalStore(subscribeVersions, () => dataVersion);
 }
 
 async function runSync(userId: string): Promise<void> {

@@ -34,7 +34,7 @@ function indexCatalog(rows: CatalogItem[]): Map<string, CatalogItem> {
   return new Map(rows.map((row) => [catalogKey(row), row]));
 }
 import { libraryCountLabel, STATUS_LABELS } from '@/lib/status-labels';
-import { useSyncVersion } from '@/lib/sync';
+import { useDataVersion } from '@/lib/sync';
 
 export default function LibraryScreen() {
   const colors = useColors();
@@ -50,17 +50,38 @@ export default function LibraryScreen() {
   const [expanded, setExpanded] = useState<Partial<Record<ItemStatus, boolean>>>({});
   const [notesItem, setNotesItem] = useState<Item | null>(null);
 
-  const syncVersion = useSyncVersion();
+  // Reload on every write, even while hidden behind a pushed screen. Focus fires
+  // only after the back animation ends, so reloading then shows stale rows first.
+  const dataVersion = useDataVersion();
+  useEffect(() => {
+    let cancelled = false;
+
+    getItems()
+      .then((rows) => {
+        if (!cancelled) {
+          setItems(rows);
+          setError(null);
+        }
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load items');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dataVersion]);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
-      Promise.all([getItems(), getCatalogItems()])
-        .then(([rows, catalogRows]) => {
+      getCatalogItems()
+        .then((catalogRows) => {
           if (!cancelled) {
-            setItems(rows);
             setCatalogByKey(indexCatalog(catalogRows));
-            setError(null);
           }
         })
         .catch((loadError: unknown) => {
@@ -72,7 +93,7 @@ export default function LibraryScreen() {
       return () => {
         cancelled = true;
       };
-    }, [syncVersion]),
+    }, []),
   );
 
   const visibleItems = items.filter(

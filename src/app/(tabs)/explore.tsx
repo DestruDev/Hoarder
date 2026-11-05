@@ -1,5 +1,5 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { memo, useCallback, useDeferredValue, useMemo, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, SectionList, View } from 'react-native';
 
 import { useAppSettings } from '@/components/app-settings';
@@ -27,7 +27,7 @@ import {
 } from '@/lib/media-search';
 import { catalogKey, sortEntries } from '@/lib/media-sort';
 import { mediaTypeLabel } from '@/lib/status-labels';
-import { useSyncVersion } from '@/lib/sync';
+import { useDataVersion } from '@/lib/sync';
 
 const ExploreEntry = memo(function ExploreEntry({
   item,
@@ -63,16 +63,37 @@ export default function ExploreScreen() {
   const [libraryByKey, setLibraryByKey] = useState<Map<string, Item>>(() => new Map());
   const [error, setError] = useState<string | null>(null);
 
-  const syncVersion = useSyncVersion();
+  // Library status reloads on every write, even while hidden behind a pushed
+  // screen, so it's current before the back animation ends and focus fires.
+  const dataVersion = useDataVersion();
+  useEffect(() => {
+    let cancelled = false;
+
+    getItems()
+      .then((libraryRows) => {
+        if (!cancelled) {
+          setLibraryByKey(new Map(libraryRows.map((row) => [catalogKey(row), row])));
+        }
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load catalog');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dataVersion]);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
-      Promise.all([getCatalogItems(), getItems()])
-        .then(([rows, libraryRows]) => {
+      getCatalogItems()
+        .then((rows) => {
           if (!cancelled) {
             setItems(rows);
-            setLibraryByKey(new Map(libraryRows.map((row) => [catalogKey(row), row])));
             setError(null);
           }
         })
@@ -85,7 +106,7 @@ export default function ExploreScreen() {
       return () => {
         cancelled = true;
       };
-    }, [syncVersion]),
+    }, []),
   );
 
   const sections = useMemo(() => {
