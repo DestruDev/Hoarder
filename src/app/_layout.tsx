@@ -35,7 +35,7 @@ function prefetchExploreCovers(items: CatalogItem[]) {
   for (const item of items) {
     const key = catalogSectionKey(item);
     const count = counts.get(key) ?? 0;
-    if (!item.coverImageUrl || count >= PREFETCH_PER_SECTION) {
+    if (!item.featured || !item.coverImageUrl || count >= PREFETCH_PER_SECTION) {
       continue;
     }
 

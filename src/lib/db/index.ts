@@ -17,6 +17,7 @@ export {
   insertCatalogItems,
   peekCatalogItems,
   pruneCoverlessCatalogItems,
+  saveCatalogEntry,
   upsertCatalogItems,
 } from './catalog-store';
 export {

@@ -100,6 +100,8 @@ export async function fetchSteamCatalog(): Promise<NewCatalogItem[]> {
         mediaType: 'game',
         coverImageUrl: steamCoverUrl(entry.appid),
         globalRating: ratioScoreOutOfTen(entry.positive, entry.negative),
+        source: 'steam',
+        externalId: String(entry.appid),
       },
     });
 
@@ -109,4 +111,54 @@ export async function fetchSteamCatalog(): Promise<NewCatalogItem[]> {
   }
 
   return mapInBatches(games, 4, ({ item, appId }) => attachStoreDetails(item, appId));
+}
+
+type SteamStoreSearch = {
+  items?: Array<{ id?: number | null; name?: string | null; type?: string | null } | null> | null;
+};
+
+export function cleanSteamTitle(name: string | null | undefined): string | null {
+  const title = name?.replace(/®|™/g, '').trim();
+  return title ? title : null;
+}
+
+// Store search returns names and ids only; hydrateSteamEntry fills in the rest on open.
+export async function searchSteam(
+  query: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<NewCatalogItem[]> {
+  const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&cc=us&l=english`;
+  const payload = (await fetchJson(url, { signal })) as SteamStoreSearch;
+  const items: NewCatalogItem[] = [];
+
+  for (const entry of payload.items ?? []) {
+    const title = cleanSteamTitle(entry?.name);
+    if (!entry || !title || entry.id == null || (entry.type && entry.type !== 'app')) {
+      continue;
+    }
+
+    items.push({
+      title,
+      mediaType: 'game',
+      coverImageUrl: steamCoverUrl(entry.id),
+      source: 'steam',
+      externalId: String(entry.id),
+    });
+
+    if (items.length >= limit) {
+      break;
+    }
+  }
+
+  return items;
+}
+
+export async function hydrateSteamEntry(entry: NewCatalogItem): Promise<NewCatalogItem> {
+  const appId = Number(entry.externalId);
+  if (entry.source !== 'steam' || !Number.isInteger(appId)) {
+    return entry;
+  }
+
+  return attachStoreDetails(entry, appId);
 }

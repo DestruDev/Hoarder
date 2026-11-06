@@ -18,6 +18,21 @@ export const CATALOG_SECTIONS: {
   { id: 'book', title: 'Top Books', types: ['book'] },
 ];
 
+export type CatalogSection = (typeof CATALOG_SECTIONS)[number];
+
+// Sections while a search is active: no "Top" titles, and movies get a section too.
+export const SEARCH_SECTIONS: CatalogSection[] = [
+  { id: 'movie', title: 'Movies', types: ['movie'] },
+  { id: 'tv', title: 'TV', types: ['tv'] },
+  { id: 'anime', title: 'Anime', types: ['anime'] },
+  { id: 'game', title: 'Games', types: ['game'] },
+  { id: 'manga', title: 'Manga', types: ['comic'], origin: 'japanese' },
+  { id: 'manhwa', title: 'Manhwa', types: ['comic'], origin: 'south_korean' },
+  { id: 'manhua', title: 'Manhua', types: ['comic'], origin: 'chinese' },
+  { id: 'comic', title: 'Comics', types: ['comic'], origin: 'american' },
+  { id: 'book', title: 'Books', types: ['book'] },
+];
+
 export function catalogSectionKey(item: {
   mediaType: MediaType;
   mangaOrigin?: ComicOrigin | null;

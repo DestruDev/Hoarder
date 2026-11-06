@@ -5,7 +5,12 @@ import { getCatalogItems, insertCatalogItems, upsertCatalogItems } from './catal
 import { db, sqlite } from './client';
 import { reportSeedProgress, type OnSeedProgress } from './progress';
 import { catalog } from './schema';
-import type { CatalogItem } from './types';
+import type { CatalogItem, NewCatalogItem } from './types';
+
+// Rows from the chart sources fill Explore's sections.
+function asFeatured(entries: NewCatalogItem[]): NewCatalogItem[] {
+  return entries.map((entry) => ({ ...entry, featured: true }));
+}
 
 function catalogNeedsHydration(existing: CatalogItem[]): boolean {
   if (existing.length === 0) {
@@ -70,7 +75,7 @@ async function replaceCatalogFromSources(
   const next = entries.length > 0 ? entries : SAMPLE_CATALOG;
   reportSeedProgress(onProgress, 'Saving catalog…', CATALOG_REMOTE_SOURCE_COUNT, total);
   await clearCatalog();
-  const saved = await insertCatalogItems(next);
+  const saved = await insertCatalogItems(asFeatured(next));
   reportSeedProgress(onProgress, 'Catalog saved', CATALOG_REMOTE_SOURCE_COUNT + saveSteps, total);
   return saved;
 }
@@ -103,7 +108,7 @@ async function enrichCatalogFromSources(): Promise<void> {
     return;
   }
 
-  await upsertCatalogItems(entries);
+  await upsertCatalogItems(asFeatured(entries));
 }
 
 export async function enrichCatalogMetadataIfNeeded(): Promise<void> {

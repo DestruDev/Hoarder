@@ -148,6 +148,9 @@ export type CatalogItem = {
   creator: string | null;
   synopsis: string | null;
   releaseDate: string | null;
+  source: string | null;
+  externalId: string | null;
+  featured: boolean;
 };
 
 export type NewCatalogItem = Pick<CatalogItem, 'title' | 'mediaType' | 'coverImageUrl'> &

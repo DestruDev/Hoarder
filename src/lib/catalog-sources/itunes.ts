@@ -53,6 +53,7 @@ type ItunesRssFeed = {
 };
 
 type ItunesSearchResult = {
+  trackId?: number | null;
   trackName?: string | null;
   collectionName?: string | null;
   artworkUrl100?: string | null;
@@ -261,4 +262,48 @@ export async function fetchItunesCatalog(): Promise<NewCatalogItem[]> {
   const comics = await fetchItunesComics();
   const movies = await fetchItunesMovies();
   return [...books, ...comics, ...movies];
+}
+
+// One ebook search covers both books and (American) graphic novels.
+export async function searchItunesBooks(
+  query: string,
+  kinds: { book: boolean; comic: boolean },
+  perKind: number,
+  signal?: AbortSignal,
+): Promise<NewCatalogItem[]> {
+  if (!kinds.book && !kinds.comic) {
+    return [];
+  }
+
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=ebook&limit=25`;
+  const payload = (await fetchJson(url, { signal })) as ItunesSearch;
+  const books: NewCatalogItem[] = [];
+  const comics: NewCatalogItem[] = [];
+
+  for (const result of payload.results ?? []) {
+    const title = result.trackName?.trim() || result.collectionName?.trim();
+    const coverImageUrl = itunesArtwork(result.artworkUrl100);
+    if (!title || !coverImageUrl) {
+      continue;
+    }
+
+    const comic = isGraphicNovel(result);
+    const list = comic ? comics : books;
+    if ((comic ? !kinds.comic : !kinds.book) || list.length >= perKind) {
+      continue;
+    }
+
+    list.push({
+      title,
+      mediaType: comic ? 'comic' : 'book',
+      coverImageUrl,
+      mangaOrigin: comic ? 'american' : null,
+      globalRating: scoreOutOfTen(result.averageUserRating, 5),
+      ...searchMetadata(result),
+      source: result.trackId != null ? 'itunes' : null,
+      externalId: result.trackId != null ? String(result.trackId) : null,
+    });
+  }
+
+  return [...books, ...comics];
 }

@@ -6,17 +6,13 @@ import { MediaPoster } from '@/components/media-cover';
 import { Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import { fetchRelatedMedia, type RelatedMedia, type RelatedSource } from '@/lib/catalog-sources/related';
-import { findItemByTitleAndType, upsertCatalogItems, type NewCatalogItem } from '@/lib/db';
+import { findItemByTitleAndType, saveCatalogEntry, type NewCatalogItem } from '@/lib/db';
 
 const POSTER_WIDTH = 100;
 const POSTER_HEIGHT = 140;
 
 function entryKey(entry: Pick<NewCatalogItem, 'title' | 'mediaType'>) {
   return `${entry.mediaType}:${entry.title.trim().toLowerCase()}`;
-}
-
-function sameTitle(a: Pick<NewCatalogItem, 'title' | 'mediaType'>, b: Pick<NewCatalogItem, 'title' | 'mediaType'>) {
-  return a.mediaType === b.mediaType && a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
 }
 
 export function RelatedMediaSection({ media }: { media: RelatedSource }) {
@@ -50,11 +46,8 @@ export function RelatedMediaSection({ media }: { media: RelatedSource }) {
       return { pathname: '/item/[id]', params: { id: String(owned.id), title: owned.title } };
     }
 
-    const catalogRows = await upsertCatalogItems([entry]);
-    const saved = catalogRows.find((row) => sameTitle(row, entry));
-    return saved
-      ? { pathname: '/catalog/[id]', params: { id: String(saved.id), title: saved.title } }
-      : null;
+    const saved = await saveCatalogEntry(entry);
+    return { pathname: '/catalog/[id]', params: { id: String(saved.id), title: saved.title } };
   }
 
   // Start on touch-down so the lookup (and the next page's Related row) is under way

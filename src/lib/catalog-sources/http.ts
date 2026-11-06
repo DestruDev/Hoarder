@@ -14,9 +14,28 @@ function retryDelayMs(response: Response | null, attempt: number): number {
   return 800 * (attempt + 1);
 }
 
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+function abortError(): Error {
+  const error = new Error('Request aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
+// `init.signal` cancels the request (and any retry) with an AbortError; the
+// built-in timeout surfaces as "Request timed out" instead.
 export async function fetchJson(url: string, init?: RequestInit, attempt = 0): Promise<unknown> {
+  const outer = init?.signal;
+  if (outer?.aborted) {
+    throw abortError();
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const forwardAbort = () => controller.abort();
+  outer?.addEventListener('abort', forwardAbort);
 
   try {
     const response = await fetch(url, {
@@ -35,7 +54,11 @@ export async function fetchJson(url: string, init?: RequestInit, attempt = 0): P
 
     return await response.json();
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (outer?.aborted) {
+      throw abortError();
+    }
+
+    if (isAbortError(error)) {
       throw new Error('Request timed out');
     }
 
@@ -49,6 +72,7 @@ export async function fetchJson(url: string, init?: RequestInit, attempt = 0): P
     throw error;
   } finally {
     clearTimeout(timer);
+    outer?.removeEventListener('abort', forwardAbort);
   }
 }
 

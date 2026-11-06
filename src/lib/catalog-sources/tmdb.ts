@@ -26,6 +26,9 @@ type TmdbMedia = {
   release_date?: string | null;
   first_air_date?: string | null;
   overview?: string | null;
+  media_type?: string | null;
+  genre_ids?: number[] | null;
+  original_language?: string | null;
 };
 
 type TmdbNamed = { name?: string | null };
@@ -209,4 +212,66 @@ export async function fetchTmdbCatalog(): Promise<NewCatalogItem[]> {
   const movies = await fetchTopRatedPages('movie', apiKey);
   const shows = await fetchTopRatedPages('tv', apiKey);
   return [...movies, ...shows];
+}
+
+const TMDB_ANIMATION_GENRE = 16;
+
+// Japanese animation is anime; AniList covers it with better data.
+function isAnime(entry: TmdbMedia): boolean {
+  return entry.original_language === 'ja' && (entry.genre_ids ?? []).includes(TMDB_ANIMATION_GENRE);
+}
+
+function withSource(item: MappedTmdbItem, kind: 'movie' | 'tv'): NewCatalogItem {
+  const { tmdbId, ...rest } = item;
+  return {
+    ...rest,
+    source: tmdbId != null ? `tmdb-${kind}` : null,
+    externalId: tmdbId != null ? String(tmdbId) : null,
+  };
+}
+
+// Search results carry only the basics; hydrateTmdbEntry fills in the rest on open.
+export async function searchTmdb(
+  query: string,
+  kinds: { movie: boolean; tv: boolean },
+  perKind: number,
+  signal?: AbortSignal,
+): Promise<NewCatalogItem[]> {
+  const apiKey = tmdbApiKey();
+  if (!apiKey || (!kinds.movie && !kinds.tv)) {
+    return [];
+  }
+
+  const endpoint = kinds.movie && kinds.tv ? 'multi' : kinds.movie ? 'movie' : 'tv';
+  const url = `https://api.themoviedb.org/3/search/${endpoint}?api_key=${encodeURIComponent(apiKey)}&query=${encodeURIComponent(query)}&include_adult=false&page=1`;
+  const payload = (await fetchJson(url, { signal })) as TmdbPage;
+  const results = (payload.results ?? []).filter((entry) => entry.poster_path && !isAnime(entry));
+
+  const kindOf = (entry: TmdbMedia): 'movie' | 'tv' | null => {
+    if (endpoint !== 'multi') {
+      return endpoint;
+    }
+    return entry.media_type === 'movie' || entry.media_type === 'tv' ? entry.media_type : null;
+  };
+
+  const movies = mapResults(results.filter((entry) => kindOf(entry) === 'movie'), 'movie')
+    .slice(0, perKind)
+    .map((item) => withSource(item, 'movie'));
+  const shows = mapResults(results.filter((entry) => kindOf(entry) === 'tv'), 'tv')
+    .slice(0, perKind)
+    .map((item) => withSource(item, 'tv'));
+
+  return [...movies, ...shows];
+}
+
+export async function hydrateTmdbEntry(entry: NewCatalogItem): Promise<NewCatalogItem> {
+  const apiKey = tmdbApiKey();
+  const kind = entry.source === 'tmdb-movie' ? 'movie' : entry.source === 'tmdb-tv' ? 'tv' : null;
+  const tmdbId = Number(entry.externalId);
+  if (!apiKey || !kind || !Number.isInteger(tmdbId)) {
+    return entry;
+  }
+
+  const [hydrated] = await attachDetails(kind, [{ ...entry, tmdbId }], apiKey);
+  return hydrated ?? entry;
 }

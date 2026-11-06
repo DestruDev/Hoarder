@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus, SavedFilterTab } from './types';
 
@@ -66,7 +66,14 @@ export const catalog = sqliteTable('catalog', {
   creator: text('creator'),
   synopsis: text('synopsis'),
   releaseDate: text('release_date'),
-});
+  // Where the row came from ('anilist', 'tmdb-movie', 'tmdb-tv', 'tvmaze', 'steam', 'itunes')
+  // and that source's id. Null for rows saved before search existed.
+  source: text('source'),
+  externalId: text('external_id'),
+  // Chart rows shown in Explore's sections. Rows saved from search or Related stay
+  // searchable but don't crowd the charts.
+  featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+}, (table) => [uniqueIndex('catalog_source_external_id_unique').on(table.source, table.externalId)]);
 
 export const savedFilters = sqliteTable('saved_filters', {
   id: integer('id').primaryKey({ autoIncrement: true }),

@@ -54,7 +54,10 @@ type TvmazeSeason = {
 };
 
 export type TvmazeShow = {
+  id?: number | null;
   name?: string | null;
+  type?: string | null;
+  language?: string | null;
   status?: string | null;
   premiered?: string | null;
   genres?: string[] | null;
@@ -167,4 +170,53 @@ async function searchShow(title: string): Promise<NewCatalogItem | null> {
 
 export async function fetchTvmazeCatalog(): Promise<NewCatalogItem[]> {
   return mapInBatches(uniqueTitles(), 3, searchShow);
+}
+
+// Japanese animation is anime; AniList covers it with better data.
+function isAnime(show: TvmazeShow): boolean {
+  return show.type === 'Animation' && show.language === 'Japanese';
+}
+
+// Keyless TV search for when there's no TMDB key. Results lack episode counts;
+// hydrateTvmazeEntry fills them in on open.
+export async function searchTvmaze(
+  query: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<NewCatalogItem[]> {
+  const url = `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`;
+  const payload = (await fetchJson(url, { signal })) as Array<{ show?: TvmazeShow | null } | null>;
+  const items: NewCatalogItem[] = [];
+
+  for (const result of payload ?? []) {
+    const show = result?.show;
+    const mapped = show && !isAnime(show) ? mapShow(show) : null;
+    if (!show || !mapped) {
+      continue;
+    }
+
+    items.push({
+      ...mapped,
+      source: show.id != null ? 'tvmaze' : null,
+      externalId: show.id != null ? String(show.id) : null,
+    });
+
+    if (items.length >= limit) {
+      break;
+    }
+  }
+
+  return items;
+}
+
+export async function hydrateTvmazeEntry(entry: NewCatalogItem): Promise<NewCatalogItem> {
+  if (entry.source !== 'tvmaze' || !entry.externalId) {
+    return entry;
+  }
+
+  const show = (await fetchJson(
+    `https://api.tvmaze.com/shows/${encodeURIComponent(entry.externalId)}?embed=seasons`,
+  )) as TvmazeShow;
+  const mapped = mapShow(show);
+  return mapped ? { ...entry, ...mapped, title: entry.title } : entry;
 }

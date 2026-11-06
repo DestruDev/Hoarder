@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from './client';
 import { catalog } from './schema';
@@ -6,6 +6,21 @@ import type { CatalogItem, MediaType, NewCatalogItem } from './types';
 
 function catalogKey(item: Pick<CatalogItem, 'title' | 'mediaType'>): string {
   return `${item.mediaType}:${item.title.trim().toLowerCase()}`;
+}
+
+function sourceKey(item: { source?: string | null; externalId?: string | null }): string | null {
+  return item.source && item.externalId ? `${item.source}:${item.externalId}` : null;
+}
+
+// Keeps a row featured once it is, and fills in a source id the row was missing
+// unless another row already holds it (the pair is unique).
+function mergedIdentity(found: CatalogItem, entry: NewCatalogItem, idTaken = false) {
+  const adoptId = !found.externalId && sourceKey(entry) != null && !idTaken;
+  return {
+    featured: found.featured || entry.featured === true,
+    source: adoptId ? entry.source : found.source,
+    externalId: adoptId ? entry.externalId : found.externalId,
+  };
 }
 
 const INSERT_CHUNK_SIZE = 40;
@@ -67,16 +82,27 @@ export async function findCatalogItemByTitleAndType(
 export async function upsertCatalogItems(entries: NewCatalogItem[]): Promise<CatalogItem[]> {
   const existing = await getCatalogItems();
   const byKey = new Map(existing.map((item) => [catalogKey(item), item]));
+  const takenIds = new Set(existing.map(sourceKey).filter((key) => key != null));
   const toInsert: NewCatalogItem[] = [];
 
   for (const entry of entries) {
     const found = byKey.get(catalogKey(entry));
+    const entryId = sourceKey(entry);
     if (!found) {
-      toInsert.push(entry);
+      toInsert.push(entryId && takenIds.has(entryId) ? { ...entry, source: null, externalId: null } : entry);
+      if (entryId) {
+        takenIds.add(entryId);
+      }
       continue;
     }
 
+    const identity = mergedIdentity(found, entry, entryId != null && takenIds.has(entryId));
+    if (identity.externalId !== found.externalId && entryId) {
+      takenIds.add(entryId);
+    }
+
     const next = {
+      ...identity,
       coverImageUrl: entry.coverImageUrl ?? found.coverImageUrl,
       releaseStatus: entry.releaseStatus ?? found.releaseStatus,
       mangaOrigin: entry.mangaOrigin ?? found.mangaOrigin,
@@ -135,4 +161,58 @@ export async function pruneCoverlessCatalogItems(): Promise<void> {
   }
 
   await db.delete(catalog).where(inArray(catalog.id, ids));
+}
+
+async function findCatalogMatch(entry: NewCatalogItem): Promise<CatalogItem | undefined> {
+  if (entry.source && entry.externalId) {
+    const [byId] = await db
+      .select()
+      .from(catalog)
+      .where(and(eq(catalog.source, entry.source), eq(catalog.externalId, entry.externalId)))
+      .limit(1);
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const [byTitle] = await db
+    .select()
+    .from(catalog)
+    .where(
+      and(
+        eq(catalog.mediaType, entry.mediaType),
+        sql`lower(trim(${catalog.title})) = ${entry.title.trim().toLowerCase()}`,
+      ),
+    )
+    .limit(1);
+  return byTitle;
+}
+
+// Saves one title (from search or Related) and returns its row. Looks it up by source
+// id, then by title, so it never scans the whole table.
+export async function saveCatalogEntry(entry: NewCatalogItem): Promise<CatalogItem> {
+  const found = await findCatalogMatch(entry);
+  if (!found) {
+    const [inserted] = await db.insert(catalog).values(entry).returning();
+    return inserted;
+  }
+
+  const next = {
+    ...mergedIdentity(found, entry),
+    coverImageUrl: found.coverImageUrl ?? entry.coverImageUrl,
+    releaseStatus: entry.releaseStatus ?? found.releaseStatus,
+    mangaOrigin: found.mangaOrigin ?? entry.mangaOrigin,
+    totalEpisodes: entry.totalEpisodes ?? found.totalEpisodes,
+    totalPages: entry.totalPages ?? found.totalPages,
+    totalChapters: entry.totalChapters ?? found.totalChapters,
+    globalRating: entry.globalRating ?? found.globalRating,
+    season: found.season ?? entry.season,
+    genres: found.genres ?? entry.genres,
+    creator: found.creator ?? entry.creator,
+    synopsis: found.synopsis ?? entry.synopsis,
+    releaseDate: found.releaseDate ?? entry.releaseDate,
+  };
+
+  const [updated] = await db.update(catalog).set(next).where(eq(catalog.id, found.id)).returning();
+  return updated ?? found;
 }

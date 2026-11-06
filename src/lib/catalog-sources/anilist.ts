@@ -12,6 +12,7 @@ const PER_PAGE = 50;
 const PAGE_COUNT = Math.ceil(CATALOG_SECTION_LIMIT / PER_PAGE);
 
 export const MEDIA_FIELDS = `
+      id
       title {
         english
         romaji
@@ -79,6 +80,7 @@ type AnilistTitle = {
 };
 
 export type AnilistMedia = {
+  id?: number | null;
   title?: AnilistTitle | null;
   format?: string | null;
   status?: string | null;
@@ -213,6 +215,8 @@ export function mapMedia(media: AnilistMedia, mediaType: 'anime' | 'comic'): New
     genres: joinGenres(media.genres),
     creator: mapCreator(media),
     synopsis: cleanSynopsis(media.description),
+    source: media.id != null ? 'anilist' : null,
+    externalId: media.id != null ? String(media.id) : null,
   };
 }
 
@@ -236,9 +240,11 @@ function mapPage(payload: AnilistResponse, mediaType: 'anime' | 'comic'): NewCat
 export async function fetchAnilist<T = AnilistResponse>(
   query: string,
   variables: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<T> {
   return (await fetchJson(ANILIST_ENDPOINT, {
     method: 'POST',
+    signal,
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -282,4 +288,66 @@ export async function fetchAnilistCatalog(): Promise<NewCatalogItem[]> {
   const mangaCN = await fetchAnilistSection('comic', MANGA_QUERY, { country: 'CN' });
 
   return [...anime, ...mangaJP, ...mangaKR, ...mangaCN];
+}
+
+const SEARCH_ANIME_PAGE = `
+  anime: Page(perPage: $perPage) {
+    media(search: $search, type: ANIME, isAdult: false, sort: [SEARCH_MATCH, POPULARITY_DESC]) {
+      ${MEDIA_FIELDS}
+      studios(isMain: true) {
+        nodes {
+          name
+        }
+      }
+    }
+  }
+`;
+
+const SEARCH_MANGA_PAGE = `
+  manga: Page(perPage: $perPage) {
+    media(search: $search, type: MANGA, isAdult: false, sort: [SEARCH_MATCH, POPULARITY_DESC]) {
+      ${MEDIA_FIELDS}
+      staff(perPage: 6, sort: [RELEVANCE]) {
+        edges {
+          role
+          node {
+            name {
+              full
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type AnilistSearchResponse = {
+  data?: {
+    anime?: { media?: Array<AnilistMedia | null> | null } | null;
+    manga?: { media?: Array<AnilistMedia | null> | null } | null;
+  };
+};
+
+// Anime and manga share one request (aliased pages) to stay under AniList's rate limit.
+export async function searchAnilist(
+  query: string,
+  kinds: { anime: boolean; comic: boolean },
+  perPage: number,
+  signal?: AbortSignal,
+): Promise<NewCatalogItem[]> {
+  if (!kinds.anime && !kinds.comic) {
+    return [];
+  }
+
+  const pages = `${kinds.anime ? SEARCH_ANIME_PAGE : ''}${kinds.comic ? SEARCH_MANGA_PAGE : ''}`;
+  const payload = await fetchAnilist<AnilistSearchResponse>(
+    `query ($search: String, $perPage: Int) {${pages}}`,
+    { search: query, perPage },
+    signal,
+  );
+
+  return [
+    ...mapPage({ data: { Page: { media: payload.data?.anime?.media } } }, 'anime'),
+    ...mapPage({ data: { Page: { media: payload.data?.manga?.media } } }, 'comic'),
+  ];
 }
