@@ -16,6 +16,18 @@ npm start
 
 Then open in Android emulator, iOS simulator, or Expo Go.
 
+## Sync
+
+Offline-first: the app reads and writes local SQLite, and a background sync reconciles it with Supabase so your library follows your account across devices. Design, conflict rules and trade-offs: [docs/sync.md](docs/sync.md).
+
+## Tests
+
+```bash
+npm test
+```
+
+Runs the sync engine tests (Vitest) against real SQLite built from the app's migrations. Server-side SQL tests live in `supabase/tests/`; see [docs/sync.md](docs/sync.md#tests).
+
 ## Schema changes
 
 After editing `src/lib/db/schema.ts`:

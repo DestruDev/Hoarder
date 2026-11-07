@@ -27,6 +27,8 @@ export const items = sqliteTable('items', {
   updatedAt: text('updated_at'),
   // Soft delete so the deletion can sync to other devices.
   deletedAt: text('deleted_at'),
+  // Local upload counter, stamped by triggers on every write (migration 0031).
+  syncSeq: integer('sync_seq'),
 }, (table) => [index('items_user_id_idx').on(table.userId)]);
 
 export const profile = sqliteTable('profile', {
@@ -36,6 +38,8 @@ export const profile = sqliteTable('profile', {
   description: text('description'),
   avatarUrl: text('avatar_url'),
   updatedAt: text('updated_at'),
+  // Local upload counter, stamped by triggers on every write (migration 0031).
+  syncSeq: integer('sync_seq'),
 });
 
 export const appSettings = sqliteTable('app_settings', {
@@ -48,6 +52,8 @@ export const appSettings = sqliteTable('app_settings', {
   // Comma-separated ItemStatus list of library sections that start expanded.
   libraryExpanded: text('library_expanded').notNull().default('in_progress'),
   updatedAt: text('updated_at'),
+  // Local upload counter, stamped by triggers on every write (migration 0031).
+  syncSeq: integer('sync_seq'),
 });
 
 export const catalog = sqliteTable('catalog', {
@@ -86,6 +92,8 @@ export const savedFilters = sqliteTable('saved_filters', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at'),
   deletedAt: text('deleted_at'),
+  // Local upload counter, stamped by triggers on every write (migration 0031).
+  syncSeq: integer('sync_seq'),
 }, (table) => [index('saved_filters_user_tab_idx').on(table.userId, table.tab)]);
 
 // Related-title lists from AniList/Wikidata, kept forever once fetched.
@@ -97,3 +105,8 @@ export const relatedMedia = sqliteTable('related_media', {
   fetchedAt: text('fetched_at').notNull(),
 });
 
+// Device-wide counter behind sync_seq: one row, bumped by the sync_seq triggers.
+export const syncClock = sqliteTable('sync_clock', {
+  id: integer('id').primaryKey(),
+  seq: integer('seq').notNull(),
+});

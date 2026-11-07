@@ -35,8 +35,11 @@
   "devDependencies": {
     "@types/react": "~19.1.10",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~10.0.0",
     "supabase": "^3.0.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^3.2.7"
   },
   "scripts": {
     "start": "expo start",
@@ -44,7 +47,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test": "vitest run"
   },
   "private": true
 }

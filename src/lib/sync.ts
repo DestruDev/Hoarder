@@ -1,152 +1,48 @@
-import { getTableColumns, getTableName } from 'drizzle-orm';
 import Storage from 'expo-sqlite/kv-store';
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
-import { appSettings, items, profile, savedFilters, sqlite } from '@/lib/db';
+import { sqlite } from '@/lib/db';
 import { onLocalWrite } from '@/lib/db/changes';
+import { createSyncEngine, type Row, type SyncServer } from '@/lib/sync-engine';
+import { SYNC_TABLES } from '@/lib/sync-tables';
 import { supabase } from '@/lib/supabase';
 
-// Local tables mirrored to Supabase (supabase/migrations/20261105000000_sync.sql).
-// Column names match on both sides except the local integer `id`, which never
-// leaves the device.
-const SYNC_TABLES = [
-  { table: items, remote: 'items', key: 'sync_id' },
-  { table: savedFilters, remote: 'saved_filters', key: 'sync_id' },
-  { table: profile, remote: 'profiles', key: 'user_id' },
-  { table: appSettings, remote: 'app_settings', key: 'user_id' },
-] as const;
+// App wiring for the sync engine (src/lib/sync-engine.ts, design in docs/sync.md):
+// Supabase as the server, the app's SQLite database and key-value store, and
+// when to run (on sign-in, on returning to the foreground, shortly after edits).
 
-type SyncTable = (typeof SYNC_TABLES)[number];
-type Row = Record<string, string | number | null>;
-
-// Each push request is one Postgres transaction, so its rows share a
-// server_updated_at. PULL_PAGE must stay above PUSH_CHUNK for paging to advance.
-const PUSH_CHUNK = 500;
-const PULL_PAGE = 1000;
 const WRITE_DEBOUNCE_MS = 2000;
 
-function columnsOf(table: SyncTable['table']): string[] {
-  return Object.values(getTableColumns(table))
-    .map((column) => column.name)
-    .filter((name) => name !== 'id');
-}
-
-function cursorKey(userId: string, remote: string, kind: 'pushedAt' | 'pulledAt'): string {
-  return `sync:${userId}:${remote}:${kind}`;
-}
-
-function toIso(value: string | number | null): string | null {
-  return value == null ? null : new Date(value).toISOString();
-}
-
-// Returns how many rows were sent.
-async function push(userId: string, { table, remote, key }: SyncTable): Promise<number> {
-  const columns = columnsOf(table);
-  const cursor = cursorKey(userId, remote, 'pushedAt');
-  const pushedAt = (await Storage.getItem(cursor)) ?? '';
-
-  const rows = await sqlite.getAllAsync<Row>(
-    `SELECT ${columns.join(', ')} FROM ${getTableName(table)}
-     WHERE user_id = ? AND updated_at > ? ORDER BY updated_at`,
-    [userId, pushedAt],
-  );
-
-  for (let start = 0; start < rows.length; start += PUSH_CHUNK) {
-    const chunk = rows.slice(start, start + PUSH_CHUNK);
-    const { error } = await supabase!.from(remote).upsert(chunk, { onConflict: key });
+const supabaseServer: SyncServer = {
+  async upsert(table, rows, key) {
+    const { error } = await supabase!.from(table).upsert(rows, { onConflict: key });
     if (error) {
-      throw new Error(`Push to ${remote} failed: ${error.message}`);
+      throw new Error(error.message);
     }
-
-    await Storage.setItem(cursor, String(chunk[chunk.length - 1]!.updated_at));
-  }
-
-  return rows.length;
-}
-
-// Applies a remote row if it is newer than the local copy. Returns true when
-// local data changed.
-async function applyRemoteRow(
-  userId: string,
-  { table, key }: SyncTable,
-  columns: string[],
-  remoteRow: Row,
-): Promise<boolean> {
-  const localTable = getTableName(table);
-  const row: Row = {
-    ...remoteRow,
-    updated_at: toIso(remoteRow.updated_at),
-    ...('deleted_at' in remoteRow ? { deleted_at: toIso(remoteRow.deleted_at) } : {}),
-  };
-
-  const existing = await sqlite.getFirstAsync<{ id: number; updated_at: string | null }>(
-    `SELECT id, updated_at FROM ${localTable} WHERE ${key} = ?`,
-    [key === 'user_id' ? userId : row[key]!],
-  );
-
-  const values = columns.map((column) => row[column] ?? null);
-
-  if (existing) {
-    if (existing.updated_at && Date.parse(existing.updated_at) >= Date.parse(String(row.updated_at))) {
-      return false;
-    }
-
-    await sqlite.runAsync(
-      `UPDATE ${localTable} SET ${columns.map((column) => `${column} = ?`).join(', ')} WHERE id = ?`,
-      [...values, existing.id],
-    );
-    return true;
-  }
-
-  if (row.deleted_at) {
-    return false;
-  }
-
-  await sqlite.runAsync(
-    `INSERT INTO ${localTable} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
-    values,
-  );
-  return true;
-}
-
-async function pull(userId: string, syncTable: SyncTable): Promise<boolean> {
-  const { remote, key } = syncTable;
-  const columns = columnsOf(syncTable.table);
-  const cursor = cursorKey(userId, remote, 'pulledAt');
-  let pulledAt = (await Storage.getItem(cursor)) ?? '1970-01-01T00:00:00Z';
-  let changed = false;
-
-  for (;;) {
-    // gte re-reads the boundary timestamp so a page ending mid-batch can't skip
-    // the rest of that batch; re-applying a row is a no-op.
+  },
+  async pullPage(table, { userId, since, key, limit }) {
     const { data, error } = await supabase!
-      .from(remote)
+      .from(table)
       .select('*')
       .eq('user_id', userId)
-      .gte('server_updated_at', pulledAt)
+      .gte('server_updated_at', since)
       .order('server_updated_at')
       .order(key)
-      .limit(PULL_PAGE);
+      .limit(limit);
     if (error) {
-      throw new Error(`Pull from ${remote} failed: ${error.message}`);
+      throw new Error(`Pull from ${table} failed: ${error.message}`);
     }
+    return data as Row[];
+  },
+};
 
-    const rows = data as Row[];
-    for (const row of rows) {
-      changed = (await applyRemoteRow(userId, syncTable, columns, row)) || changed;
-    }
-
-    if (rows.length > 0) {
-      pulledAt = String(rows[rows.length - 1]!.server_updated_at);
-      await Storage.setItem(cursor, pulledAt);
-    }
-
-    if (rows.length < PULL_PAGE) {
-      return changed;
-    }
-  }
-}
+const engine = createSyncEngine({
+  local: sqlite,
+  kv: Storage,
+  server: supabaseServer,
+  tables: SYNC_TABLES,
+});
 
 let syncVersion = 0;
 let dataVersion = 0;
@@ -157,12 +53,6 @@ function notifyVersionListeners() {
   for (const listener of versionListeners) {
     listener();
   }
-}
-
-function bumpSyncVersion() {
-  syncVersion += 1;
-  dataVersion += 1;
-  notifyVersionListeners();
 }
 
 onLocalWrite(() => {
@@ -196,20 +86,17 @@ export function useDataVersion(): number {
 }
 
 async function runSync(userId: string): Promise<void> {
-  let changed = false;
-  let pushed = 0;
-  for (const syncTable of SYNC_TABLES) {
-    pushed += await push(userId, syncTable);
-    changed = (await pull(userId, syncTable)) || changed;
-  }
+  const { pushed, changed } = await engine.runSync(userId);
 
   if (pushed > 0) {
     pushVersion += 1;
-    notifyVersionListeners();
   }
-
   if (changed) {
-    bumpSyncVersion();
+    syncVersion += 1;
+    dataVersion += 1;
+  }
+  if (pushed > 0 || changed) {
+    notifyVersionListeners();
   }
 }
 
