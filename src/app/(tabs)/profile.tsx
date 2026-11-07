@@ -2,9 +2,19 @@ import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useAuth } from '@/components/auth-provider';
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { FollowCounts } from '@/components/social';
 import { ScreenScrollView, Text, TextInput } from '@/components/themed';
+import { useColors } from '@/components/theme-colors';
 import { getProfile, saveProfile, type Profile } from '@/lib/db';
+import {
+  getPublicProfile,
+  normalizeUsername,
+  saveUsername,
+  USERNAME_RULES,
+  type PublicProfile,
+} from '@/lib/social';
 import { useSyncVersion } from '@/lib/sync';
 
 const PLACEHOLDER_NAME = 'Username';
@@ -17,6 +27,12 @@ const emptyProfile: Profile = {
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
+  const colors = useColors();
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  // Online-only: username and follow counts live in Supabase, not SQLite.
+  const [social, setSocial] = useState<PublicProfile | null>(null);
+  const [username, setUsername] = useState('');
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -53,10 +69,21 @@ export default function ProfileScreen() {
           }
         });
 
+      if (userId) {
+        getPublicProfile(userId)
+          .then((row) => {
+            if (!cancelled) {
+              setSocial(row);
+              setUsername(row.username ?? '');
+            }
+          })
+          .catch(() => undefined);
+      }
+
       return () => {
         cancelled = true;
       };
-    }, [syncVersion]),
+    }, [syncVersion, userId]),
   );
 
   async function handleSave() {
@@ -67,6 +94,13 @@ export default function ProfileScreen() {
       setDescription(saved.description ?? '');
       setAvatarUrl(saved.avatarUrl ?? '');
       setError(null);
+
+      const nextUsername = normalizeUsername(username);
+      if (nextUsername && nextUsername !== social?.username) {
+        const claimed = await saveUsername(nextUsername);
+        setUsername(claimed);
+        setSocial((current) => (current ? { ...current, username: claimed } : current));
+      }
     } catch (saveError: unknown) {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save profile');
     }
@@ -78,7 +112,20 @@ export default function ProfileScreen() {
 
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
         <ProfileAvatar uri={profile.avatarUrl} size={72} />
-        {profile.description ? <Text style={{ flex: 1 }}>{profile.description}</Text> : null}
+        <View style={{ flex: 1, gap: 6 }}>
+          {social?.username ? (
+            <Text style={{ color: colors.textMuted }}>@{social.username}</Text>
+          ) : null}
+          {profile.description ? <Text>{profile.description}</Text> : null}
+          {social ? (
+            <FollowCounts
+              userId={social.userId}
+              name={profile.name ?? (social.username ? `@${social.username}` : 'You')}
+              followerCount={social.followerCount}
+              followingCount={social.followingCount}
+            />
+          ) : null}
+        </View>
       </View>
 
       <View style={{ gap: 8 }}>
@@ -88,6 +135,14 @@ export default function ProfileScreen() {
           placeholder="Profile name"
           autoCapitalize="words"
         />
+        <TextInput
+          value={username}
+          onChangeText={setUsername}
+          placeholder="Username (so people can find and follow you)"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{USERNAME_RULES}</Text>
         <TextInput
           value={description}
           onChangeText={setDescription}

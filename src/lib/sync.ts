@@ -40,7 +40,8 @@ function toIso(value: string | number | null): string | null {
   return value == null ? null : new Date(value).toISOString();
 }
 
-async function push(userId: string, { table, remote, key }: SyncTable): Promise<void> {
+// Returns how many rows were sent.
+async function push(userId: string, { table, remote, key }: SyncTable): Promise<number> {
   const columns = columnsOf(table);
   const cursor = cursorKey(userId, remote, 'pushedAt');
   const pushedAt = (await Storage.getItem(cursor)) ?? '';
@@ -60,6 +61,8 @@ async function push(userId: string, { table, remote, key }: SyncTable): Promise<
 
     await Storage.setItem(cursor, String(chunk[chunk.length - 1]!.updated_at));
   }
+
+  return rows.length;
 }
 
 // Applies a remote row if it is newer than the local copy. Returns true when
@@ -147,6 +150,7 @@ async function pull(userId: string, syncTable: SyncTable): Promise<boolean> {
 
 let syncVersion = 0;
 let dataVersion = 0;
+let pushVersion = 0;
 const versionListeners = new Set<() => void>();
 
 function notifyVersionListeners() {
@@ -173,6 +177,12 @@ function subscribeVersions(listener: () => void) {
   };
 }
 
+// Changes after a sync sends local edits to the server. Server-derived data,
+// like the activity a trigger writes for a library change, is current from then.
+export function usePushVersion(): number {
+  return useSyncExternalStore(subscribeVersions, () => pushVersion);
+}
+
 // Screens add this to their load effect's deps to reload after a sync pulls changes.
 export function useSyncVersion(): number {
   return useSyncExternalStore(subscribeVersions, () => syncVersion);
@@ -187,9 +197,15 @@ export function useDataVersion(): number {
 
 async function runSync(userId: string): Promise<void> {
   let changed = false;
+  let pushed = 0;
   for (const syncTable of SYNC_TABLES) {
-    await push(userId, syncTable);
+    pushed += await push(userId, syncTable);
     changed = (await pull(userId, syncTable)) || changed;
+  }
+
+  if (pushed > 0) {
+    pushVersion += 1;
+    notifyVersionListeners();
   }
 
   if (changed) {

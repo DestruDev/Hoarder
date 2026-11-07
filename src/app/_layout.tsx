@@ -19,7 +19,6 @@ import {
   enrichCatalogMetadataIfNeeded,
   getCatalogItems,
   seedCatalogIfEmpty,
-  seedFeedIfEmpty,
   type CatalogItem,
   type SeedProgress,
 } from '@/lib/db';
@@ -80,10 +79,6 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
 
     seedCatalogIfEmpty(setProgress)
-      .then(() => {
-        setProgress({ label: 'Preparing feed…', current: 0, total: 0 });
-        return seedFeedIfEmpty();
-      })
       .then(() => getCatalogItems())
       .then(prefetchExploreCovers)
       .catch((seedError) => {
@@ -173,6 +168,10 @@ function AppStack({ signedIn }: { signedIn: boolean }) {
           <Stack.Screen name="form" options={{ title: 'Item' }} />
           <Stack.Screen name="debug" options={{ title: 'Debug' }} />
           <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
+          <Stack.Screen name="people" options={{ title: 'Find People' }} />
+          <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
+          <Stack.Screen name="follows/[id]" options={{ title: 'Profile' }} />
+          <Stack.Screen name="likes/[id]" options={{ title: 'Likes' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="login" options={{ headerShown: false }} />

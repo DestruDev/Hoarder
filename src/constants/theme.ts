@@ -8,6 +8,8 @@ const darkColors = {
   surface: '#161616',
   text: '#ffffff',
   accent: '#4f8cff',
+  // Text and icons drawn on an accent background (e.g. Follow buttons).
+  onAccent: '#ffffff',
   border: '#333333',
   textMuted: '#aaaaaa',
   inputBackground: '#111111',
@@ -27,6 +29,7 @@ const lightColors: ThemeColors = {
   surface: '#f2f2f5',
   text: '#111111',
   accent: '#2f6fe0',
+  onAccent: '#ffffff',
   border: '#d4d4d8',
   textMuted: '#666666',
   inputBackground: '#f7f7f8',

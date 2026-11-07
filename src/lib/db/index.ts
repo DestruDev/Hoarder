@@ -8,8 +8,6 @@ export {
 } from './catalog-seed';
 export type { OnSeedProgress, SeedProgress } from './progress';
 export { SAMPLE_CATALOG } from './catalog-data';
-export { resetAndSeedFeed, seedFeedIfEmpty, seedFeedNotifications } from './feed-seed';
-export { getFeedNotifications, toggleFeedLike } from './feed-store';
 export {
   findCatalogItemByTitleAndType,
   getCatalogItemById,
@@ -34,13 +32,11 @@ export { clearRelatedMedia, getStoredRelatedMedia, saveRelatedMedia } from './re
 export { createSavedFilter, deleteSavedFilter, getSavedFilters } from './saved-filters-store';
 export { DEFAULT_APP_SETTINGS, getAppSettings, saveAppSettings } from './settings-store';
 export { clearLibrary, resetAndSeed, sampleItemsFromCatalog, seedIfEmpty, seedItems } from './seed';
-export { appSettings, catalog, feedNotifications, items, profile, relatedMedia, savedFilters } from './schema';
-export { COLLECTION_VIEWS, COLOR_SCHEMES, SAVED_FILTER_LIMIT, COMIC_ORIGINS, FEED_KINDS, ITEM_STATUSES, MEDIA_TYPES, RATING_SYSTEMS, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
+export { appSettings, catalog, items, profile, relatedMedia, savedFilters } from './schema';
+export { COLLECTION_VIEWS, COLOR_SCHEMES, SAVED_FILTER_LIMIT, COMIC_ORIGINS, ITEM_STATUSES, MEDIA_TYPES, RATING_SYSTEMS, RELEASE_STATUSES, SHOW_MEDIA_TYPES, isChapteredMediaType, isComicMediaType, isPagedMediaType, isShowMediaType } from './types';
 export type {
   CatalogItem,
   ComicOrigin,
-  FeedKind,
-  FeedNotification,
   Item,
   ItemFilters,
   ItemStatus,

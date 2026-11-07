@@ -1,224 +1,125 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
 
-import { MediaCover } from '@/components/media-cover';
+import { useAuth } from '@/components/auth-provider';
 import { FeedHeader, useMediaQuery } from '@/components/media-search';
-import { Screen, ScreenScrollView, Text } from '@/components/themed';
+import { ActivityRow } from '@/components/social';
+import { Screen, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
-import {
-  getCatalogItems,
-  getFeedNotifications,
-  toggleFeedLike,
-  type CatalogItem,
-  type FeedNotification,
-} from '@/lib/db';
-import { matchesFeedFilter } from '@/lib/media-search';
+import { feedScopeFor } from '@/lib/media-search';
+import { syncNow, usePushVersion } from '@/lib/sync';
+import { useActivityFeed } from '@/lib/use-activity-feed';
 
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-function timeAgo(iso: string): string {
-  const elapsed = Math.max(0, Date.now() - new Date(iso).getTime());
-
-  if (elapsed < MINUTE) {
-    return 'just now';
-  }
-
-  if (elapsed < HOUR) {
-    return `${Math.round(elapsed / MINUTE)}m ago`;
-  }
-
-  if (elapsed < DAY) {
-    return `${Math.round(elapsed / HOUR)}h ago`;
-  }
-
-  const days = Math.round(elapsed / DAY);
-  if (days < 7) {
-    return `${days}d ago`;
-  }
-
-  const weeks = Math.round(days / 7);
-  if (weeks < 5) {
-    return `${weeks}w ago`;
-  }
-
-  return new Date(iso).toLocaleDateString();
-}
+const EMPTY_MESSAGES = {
+  all: 'Nothing here yet. Follow people to see what they add, finish and drop, or update your library.',
+  your: 'Your activity shows up here when you add, complete, drop or plan to start something.',
+  following: "No activity from people you follow yet.",
+};
 
 export default function FeedScreen() {
   const colors = useColors();
+  const router = useRouter();
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const { feedFilter } = useMediaQuery();
-  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
-  const [feedItems, setFeedItems] = useState<FeedNotification[]>([]);
+  const scope = feedScopeFor(feedFilter);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
+  const feed = useActivityFeed({
+    author: scope === 'your' ? userId ?? undefined : undefined,
+    followingOnly: scope === 'following',
+  });
+  const { refresh } = feed;
 
-      Promise.all([getCatalogItems(), getFeedNotifications()])
-        .then(([catalogRows, feedRows]) => {
-          if (!cancelled) {
-            setCatalogItems(catalogRows);
-            setFeedItems(feedRows);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setCatalogItems([]);
-            setFeedItems([]);
-          }
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }, []),
+  // Push pending library edits first so your own new activity is in the result.
+  const refreshWithSync = useCallback(
+    () => refresh(userId ? () => syncNow(userId) : undefined),
+    [refresh, userId],
   );
 
-  const catalogById = useMemo(() => {
-    const map = new Map<number, CatalogItem>();
-    for (const item of catalogItems) {
-      map.set(item.id, item);
+  // Focus refreshes run silently; the pull-to-refresh spinner is only for a
+  // user's pull, so it never shifts the list on its own.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshWithSync();
+    }, [refreshWithSync]),
+  );
+
+  // Your library edits reach the server a couple of seconds after you make them
+  // (sync is debounced). Refetch in the background once they do, so a status
+  // change shows up here without revisiting the tab. Tabs stay mounted, so this
+  // runs while you're on Library or an item screen too.
+  const pushVersion = usePushVersion();
+  const seenPushVersion = useRef(pushVersion);
+  useEffect(() => {
+    if (pushVersion !== seenPushVersion.current) {
+      seenPushVersion.current = pushVersion;
+      void refresh();
     }
-    return map;
-  }, [catalogItems]);
+  }, [pushVersion, refresh]);
 
-  const notifications = [...feedItems]
-    .filter((item) => matchesFeedFilter(item, feedFilter))
-    .sort(
-      (left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
-    );
-
-  async function handleToggleLike(id: number) {
-    const previous = feedItems;
-    setFeedItems((current) =>
-      current.map((item) => {
-        if (item.id !== id) {
-          return item;
-        }
-
-        const liked = !item.liked;
-        return {
-          ...item,
-          liked,
-          likeCount: Math.max(0, item.likeCount + (liked ? 1 : -1)),
-        };
-      }),
-    );
-
+  const [pulling, setPulling] = useState(false);
+  const handlePull = useCallback(async () => {
+    setPulling(true);
     try {
-      const updated = await toggleFeedLike(id);
-      if (updated) {
-        setFeedItems((current) => current.map((item) => (item.id === id ? updated : item)));
-      }
-    } catch {
-      setFeedItems(previous);
+      await refreshWithSync();
+    } finally {
+      setPulling(false);
     }
-  }
+  }, [refreshWithSync]);
+
+  const findPeople = () => router.push('/people');
 
   return (
     <Screen>
-      <FeedHeader />
-      <ScreenScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        {notifications.length === 0 ? (
-          <Text style={{ paddingVertical: 12 }}>
-            {feedItems.length === 0
-              ? 'No updates yet. Replace & seed the feed from Settings → Debug.'
-              : 'No matching updates.'}
-          </Text>
-        ) : (
-          notifications.map((notification) => {
-            const catalogItem = catalogById.get(notification.catalogId);
-            const likeCount =
-              notification.liked && notification.likeCount < 1 ? 1 : notification.likeCount;
-            const content = (
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <MediaCover uri={catalogItem?.coverImageUrl} width={48} height={68} />
-                <View style={{ flex: 1 }}>
-                  <Text>{notification.title}</Text>
-                  <Text>{notification.body}</Text>
-                </View>
-              </View>
-            );
-
-            return (
-              <View
-                key={notification.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 4,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}>
-                {catalogItem ? (
-                  <Link
-                    href={{ pathname: '/catalog/[id]', params: { id: String(catalogItem.id), title: catalogItem.title } }}
-                    asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={notification.title}
-                      style={{ flex: 1 }}>
-                      {content}
-                    </Pressable>
-                  </Link>
-                ) : (
-                  content
-                )}
-                <View
-                  style={{
-                    width: 72,
-                    alignItems: 'flex-end',
-                    justifyContent: 'space-between',
-                    alignSelf: 'stretch',
-                    minHeight: 68,
-                  }}>
-                  <Text style={{ color: colors.textMuted }}>{timeAgo(notification.occurredAt)}</Text>
+      <FeedHeader onFindPeople={findPeople} />
+      {!feed.loaded ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.text} />
+        </View>
+      ) : (
+        <FlatList
+          data={feed.activities}
+          keyExtractor={(activity) => String(activity.id)}
+          renderItem={({ item }) => (
+            <ActivityRow activity={item} onToggleLike={feed.toggleLike} onDelete={feed.removeActivity} />
+          )}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl refreshing={pulling} onRefresh={handlePull} tintColor={colors.text} />
+          }
+          onEndReached={() => void feed.loadMore()}
+          onEndReachedThreshold={0.5}
+          ListHeaderComponent={
+            feed.error ? (
+              <Text style={{ color: colors.danger, paddingVertical: 12 }}>{feed.error}</Text>
+            ) : null
+          }
+          ListFooterComponent={
+            feed.loadingMore ? <ActivityIndicator style={{ marginVertical: 16 }} color={colors.text} /> : null
+          }
+          ListEmptyComponent={
+            feed.error ? null : (
+              <View style={{ paddingVertical: 24, gap: 16, alignItems: 'flex-start' }}>
+                <Text style={{ color: colors.textMuted }}>{EMPTY_MESSAGES[scope]}</Text>
+                {scope !== 'your' ? (
                   <Pressable
-                    onPress={() => handleToggleLike(notification.id)}
-                    hitSlop={8}
+                    onPress={findPeople}
                     accessibilityRole="button"
-                    accessibilityLabel={notification.liked ? 'Unlike' : 'Like'}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      alignSelf: 'stretch',
-                      height: 32,
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 18,
+                      backgroundColor: colors.accent,
                     }}>
-                    {likeCount > 0 ? (
-                      <Text
-                        style={{
-                          color: notification.liked ? colors.danger : colors.textMuted,
-                          marginRight: 2,
-                        }}>
-                        {likeCount}
-                      </Text>
-                    ) : null}
-                    <View
-                      style={{
-                        width: 22,
-                        height: 32,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Ionicons
-                        name={notification.liked ? 'heart' : 'heart-outline'}
-                        size={22}
-                        color={notification.liked ? colors.danger : colors.textMuted}
-                      />
-                    </View>
+                    <Text style={{ color: colors.onAccent, fontWeight: '600' }}>Find people</Text>
                   </Pressable>
-                </View>
+                ) : null}
               </View>
-            );
-          })
-        )}
-      </ScreenScrollView>
+            )
+          }
+        />
+      )}
     </Screen>
   );
 }

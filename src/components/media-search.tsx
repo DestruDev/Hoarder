@@ -178,7 +178,7 @@ export function useMediaQuery() {
   return value;
 }
 
-function useActiveTab() {
+function useActiveTab(): string {
   const segments = useSegments();
   const tabsIndex = segments.indexOf('(tabs)');
   if (tabsIndex >= 0) {
@@ -1625,11 +1625,15 @@ export function TabSearchHeader({
   title,
   showFilter = false,
   showSearch = true,
+  extraAction,
 }: {
   title: string;
   showFilter?: boolean;
   showSearch?: boolean;
+  // A 44pt header button shown before the filter/search buttons.
+  extraAction?: ReactNode;
 }) {
+  const actionCount = (extraAction ? 1 : 0) + (showFilter ? 1 : 0) + (showSearch ? 1 : 0);
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const tab = useActiveTab();
@@ -1663,7 +1667,7 @@ export function TabSearchHeader({
                 textAlign: 'center',
                 fontSize: 17,
                 fontWeight: '600',
-                marginHorizontal: showFilter && showSearch ? 96 : 52,
+                marginHorizontal: actionCount >= 2 ? 96 : 52,
               }}>
               {title}
             </Text>
@@ -1676,6 +1680,7 @@ export function TabSearchHeader({
                 flexDirection: 'row',
                 alignItems: 'center',
               }}>
+              {extraAction}
               {showFilter ? <HeaderFilterButton /> : null}
               {showSearch ? <HeaderSearchButton /> : null}
             </View>
@@ -1686,8 +1691,26 @@ export function TabSearchHeader({
   );
 }
 
-export function FeedHeader() {
-  return <TabSearchHeader title="Feed" showFilter showSearch={false} />;
+export function FeedHeader({ onFindPeople }: { onFindPeople: () => void }) {
+  const colors = useColors();
+
+  return (
+    <TabSearchHeader
+      title="Feed"
+      showFilter
+      showSearch={false}
+      extraAction={
+        <Pressable
+          onPress={onFindPeople}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Find people"
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="person-add-outline" size={22} color={colors.text} />
+        </Pressable>
+      }
+    />
+  );
 }
 
 export function LibrarySearchHeader() {

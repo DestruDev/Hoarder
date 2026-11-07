@@ -10,7 +10,6 @@ import {
   clearRelatedMedia,
   resetAndSeed,
   resetAndSeedCatalog,
-  resetAndSeedFeed,
   type SeedProgress,
 } from '@/lib/db';
 
@@ -145,30 +144,8 @@ export default function DebugScreen() {
       title: 'Replace catalog snapshot from APIs',
       onPress: () =>
         runCommand('reset-catalog', async () => {
-          const seeded = await resetAndSeedCatalog(updateProgress, 1);
-          updateProgress({
-            label: 'Seeding feed…',
-            current: debugJob.current,
-            total: debugJob.total,
-          });
-          const feed = await resetAndSeedFeed();
-          updateProgress({
-            label: 'Done',
-            current: debugJob.total,
-            total: debugJob.total,
-          });
-          return `Catalog snapshot saved with ${seeded.length} titles. Feed seeded ${feed.length} updates from the catalog.`;
-        }),
-    },
-    {
-      id: 'reset-feed',
-      title: 'Replace & seed feed from catalog',
-      onPress: () =>
-        runCommand('reset-feed', async () => {
-          const seeded = await resetAndSeedFeed(updateProgress);
-          return seeded.length === 0
-            ? 'No catalog titles to add. Replace the catalog snapshot first.'
-            : `Feed reset complete. Seeded ${seeded.length} updates from the catalog.`;
+          const seeded = await resetAndSeedCatalog(updateProgress);
+          return `Catalog snapshot saved with ${seeded.length} titles.`;
         }),
     },
   ];

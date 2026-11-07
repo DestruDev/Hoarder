@@ -211,6 +211,13 @@
       "when": 1794204000000,
       "tag": "0029_catalog_search_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1794290400000,
+      "tag": "0030_drop_feed_notifications",
+      "breakpoints": true
     }
   ]
 }

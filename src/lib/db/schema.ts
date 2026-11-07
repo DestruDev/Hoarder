@@ -1,6 +1,6 @@
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
-import type { CollectionView, ColorScheme, ComicOrigin, FeedKind, ItemStatus, MediaType, RatingSystem, ReleaseStatus, SavedFilterTab } from './types';
+import type { CollectionView, ColorScheme, ComicOrigin, ItemStatus, MediaType, RatingSystem, ReleaseStatus, SavedFilterTab } from './types';
 
 export const items = sqliteTable('items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -97,15 +97,3 @@ export const relatedMedia = sqliteTable('related_media', {
   fetchedAt: text('fetched_at').notNull(),
 });
 
-export const feedNotifications = sqliteTable('feed_notifications', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  title: text('title').notNull(),
-  body: text('body').notNull(),
-  mediaTitle: text('media_title').notNull(),
-  mediaType: text('media_type').notNull().$type<MediaType>(),
-  kind: text('kind').notNull().$type<FeedKind>(),
-  occurredAt: text('occurred_at').notNull(),
-  catalogId: integer('catalog_id').notNull(),
-  liked: integer('liked', { mode: 'boolean' }).notNull().default(false),
-  likeCount: integer('like_count').notNull().default(0),
-});

@@ -4,7 +4,6 @@ import {
   MEDIA_TYPES,
   RELEASE_STATUSES,
   type ComicOrigin,
-  type FeedKind,
   type ItemStatus,
   type MediaType,
   type ReleaseStatus,
@@ -241,7 +240,7 @@ export function matchesDateRules(date: string | null | undefined, rules: DateRul
   return rules.every((rule) => rulePasses(parts, rule));
 }
 
-export const FEED_FILTERS = ['your', 'friend', 'notification'] as const;
+export const FEED_FILTERS = ['your', 'following'] as const;
 
 export type FeedFilterValue = (typeof FEED_FILTERS)[number];
 export type FeedFilterOption = FeedFilterValue | 'all';
@@ -249,9 +248,8 @@ export type FeedFilter = FeedFilterValue[];
 
 export const FEED_FILTER_OPTIONS: { value: FeedFilterOption; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'your', label: 'Your Feed' },
-  { value: 'friend', label: 'Friend Feed' },
-  { value: 'notification', label: 'Notification Feed' },
+  { value: 'your', label: 'Your Activity' },
+  { value: 'following', label: 'Following' },
 ];
 
 export function matchesSearchText(text: string | null | undefined, query: string): boolean {
@@ -333,23 +331,14 @@ export function toggleFeedFilter(
   return [...filter, option];
 }
 
-export function matchesFeedFilter(
-  item: { kind: FeedKind },
-  filter: FeedFilter,
-): boolean {
-  if (filter.length === 0 || filter.includes('your')) {
-    return true;
+// Which server-side feed query a filter selection maps to. Picking both is the
+// same as All.
+export function feedScopeFor(filter: FeedFilter): 'all' | 'your' | 'following' {
+  if (filter.length === 1) {
+    return filter[0]!;
   }
 
-  if (filter.includes('friend') && item.kind === 'friend') {
-    return true;
-  }
-
-  if (filter.includes('notification') && item.kind === 'media') {
-    return true;
-  }
-
-  return false;
+  return 'all';
 }
 
 export function matchesFeedSearch(

@@ -31,6 +31,7 @@ import m0026 from './0026_saved_filters.sql';
 import m0027 from './0027_related_media_cache.sql';
 import m0028 from './0028_sync_columns.sql';
 import m0029 from './0029_catalog_search_identity.sql';
+import m0030 from './0030_drop_feed_notifications.sql';
 
   export default {
     journal,
@@ -64,7 +65,8 @@ m0025,
 m0026,
 m0027,
 m0028,
-m0029
+m0029,
+m0030
     }
   }
   
