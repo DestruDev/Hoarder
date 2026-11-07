@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('sign_in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -88,17 +90,41 @@ export default function LoginScreen() {
           textContentType="emailAddress"
           returnKeyType="next"
         />
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password (6+ characters)"
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete={mode === 'sign_in' ? 'current-password' : 'new-password'}
-          textContentType={mode === 'sign_in' ? 'password' : 'newPassword'}
-          returnKeyType="go"
-          onSubmitEditing={handleSubmit}
-        />
+        <View style={{ justifyContent: 'center' }}>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password (6+ characters)"
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete={mode === 'sign_in' ? 'current-password' : 'new-password'}
+            textContentType={mode === 'sign_in' ? 'password' : 'newPassword'}
+            returnKeyType="go"
+            onSubmitEditing={handleSubmit}
+            style={{ paddingRight: 44 }}
+          />
+          <Pressable
+            onPress={() => setShowPassword((shown) => !shown)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </Pressable>
+        </View>
 
         {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
         {notice ? <Text style={{ color: colors.textMuted }}>{notice}</Text> : null}
