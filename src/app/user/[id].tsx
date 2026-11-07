@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
@@ -62,7 +63,8 @@ export default function UserScreen() {
   }
 
   const title = profile ? displayNameFor(profile) : 'Profile';
-  const canSeeActivity = isSelf || profile?.isFollowing === true;
+  // Mirrors the server rule (RLS on activities): yours, people you follow, or public accounts.
+  const canSeeActivity = isSelf || profile?.isFollowing === true || profile?.isPrivate === false;
 
   return (
     <Screen>
@@ -93,9 +95,19 @@ export default function UserScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <ProfileAvatar uri={profile.avatarUrl} size={64} />
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '600' }} numberOfLines={1}>
-                      {profile.displayName ?? (profile.username ? `@${profile.username}` : 'No name yet')}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
+                        {profile.displayName ?? (profile.username ? `@${profile.username}` : 'No name yet')}
+                      </Text>
+                      {profile.isPrivate ? (
+                        <Ionicons
+                          name="lock-closed"
+                          size={14}
+                          color={colors.textMuted}
+                          accessibilityLabel="Private account"
+                        />
+                      ) : null}
+                    </View>
                     {profile.displayName && profile.username ? (
                       <Text style={{ color: colors.textMuted }}>@{profile.username}</Text>
                     ) : null}
@@ -122,7 +134,7 @@ export default function UserScreen() {
                 ? feed.loaded
                   ? 'No activity yet.'
                   : ''
-                : `Follow ${displayNameFor(profile)} to see their activity.`}
+                : `This account is private. Follow ${displayNameFor(profile)} to see their activity.`}
             </Text>
           ) : null
         }

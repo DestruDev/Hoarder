@@ -172,6 +172,7 @@ function AppStack({ signedIn }: { signedIn: boolean }) {
           <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
           <Stack.Screen name="follows/[id]" options={{ title: 'Profile' }} />
           <Stack.Screen name="likes/[id]" options={{ title: 'Likes' }} />
+          <Stack.Screen name="account" options={{ title: 'Account' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="login" options={{ headerShown: false }} />

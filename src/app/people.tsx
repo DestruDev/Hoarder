@@ -16,10 +16,12 @@ export default function PeopleScreen() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { busyIds, toggleFollow } = useFollowToggle(setResults, setError);
-  const normalized = normalizeUsername(query);
+  // Searched as typed; normalizeUsername only decides whether there's anything to search.
+  const trimmed = query.trim();
+  const hasQuery = normalizeUsername(trimmed) !== '';
 
   useEffect(() => {
-    if (!normalized) {
+    if (!hasQuery) {
       setResults([]);
       setSearching(false);
       return;
@@ -28,7 +30,7 @@ export default function PeopleScreen() {
     let cancelled = false;
     setSearching(true);
     const timer = setTimeout(() => {
-      searchUsers(normalized)
+      searchUsers(trimmed)
         .then((rows) => {
           if (!cancelled) {
             setResults(rows);
@@ -51,7 +53,7 @@ export default function PeopleScreen() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [normalized]);
+  }, [hasQuery, trimmed]);
 
   return (
     <Screen>
@@ -59,7 +61,7 @@ export default function PeopleScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search by @username"
+          placeholder="Search by name or @username"
           autoCapitalize="none"
           autoCorrect={false}
           autoFocus
@@ -81,7 +83,7 @@ export default function PeopleScreen() {
             <ActivityIndicator style={{ marginTop: 16 }} color={colors.text} />
           ) : (
             <Text style={{ color: colors.textMuted, paddingVertical: 12 }}>
-              {normalized ? `No one matches @${normalized}.` : 'Find people by their username.'}
+              {hasQuery ? `No one matches “${trimmed}”.` : 'Find people by their name or username.'}
             </Text>
           )
         }

@@ -44,6 +44,8 @@ export type PublicProfile = {
   followerCount: number;
   followingCount: number;
   isFollowing: boolean;
+  // Private: only followers see their activity. Public: any signed-in user can.
+  isPrivate: boolean;
 };
 
 export const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
@@ -163,13 +165,15 @@ export async function setFollowing(userId: string, following: boolean): Promise<
   }
 }
 
+// Matches handles first, then profile names; a leading @ searches handles only.
+// The query goes to the server as typed (trimmed) so it can tell the two apart.
 export async function searchUsers(query: string): Promise<UserSummary[]> {
-  const normalized = normalizeUsername(query);
-  if (!normalized) {
+  const trimmed = query.trim();
+  if (!normalizeUsername(trimmed)) {
     return [];
   }
 
-  const { data, error } = await client().rpc('search_users', { query: normalized });
+  const { data, error } = await client().rpc('search_users', { query: trimmed });
   if (error) {
     fail(error, 'Search failed');
   }
@@ -330,6 +334,8 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile> {
     follower_count: number;
     following_count: number;
     is_following: boolean;
+    // Absent until the private-accounts migration is applied; treated as private.
+    is_private?: boolean | null;
   };
 
   return {
@@ -341,7 +347,21 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile> {
     followerCount: Number(row.follower_count),
     followingCount: Number(row.following_count),
     isFollowing: row.is_following,
+    isPrivate: row.is_private ?? true,
   };
+}
+
+// Makes the signed-in account public or private (see PublicProfile.isPrivate).
+export async function setAccountPrivate(isPrivate: boolean): Promise<void> {
+  const { error } = await client()
+    .from('social_settings')
+    .upsert(
+      { user_id: await currentUserId(), is_private: isPrivate, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    );
+  if (error) {
+    fail(error, 'Failed to update privacy');
+  }
 }
 
 // Claims or changes the signed-in account's username. Uniqueness and format are

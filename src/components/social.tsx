@@ -510,10 +510,12 @@ export function UserRow({
   user: UserSummary;
   busy: boolean;
   onToggleFollow: (user: UserSummary) => void;
-  // False for your own row in a list.
+  // False to hide the Follow button. Your own row never has one; it says "You".
   showFollow?: boolean;
 }) {
   const colors = useColors();
+  const { session } = useAuth();
+  const isSelf = user.userId === session?.user.id;
   const primary = user.displayName ?? (user.username ? `@${user.username}` : 'No name yet');
   const secondary = user.displayName && user.username ? `@${user.username}` : null;
 
@@ -544,7 +546,21 @@ export function UserRow({
           </View>
         </Pressable>
       </Link>
-      {showFollow ? (
+      {isSelf ? (
+        <View
+          style={{
+            minWidth: 96,
+            height: 34,
+            paddingHorizontal: 14,
+            borderRadius: 17,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}>
+          <Text style={{ color: colors.textMuted, fontWeight: '600' }}>You</Text>
+        </View>
+      ) : showFollow ? (
         <FollowButton following={user.isFollowing} busy={busy} onPress={() => onToggleFollow(user)} />
       ) : null}
     </View>
