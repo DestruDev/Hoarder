@@ -7,6 +7,7 @@ import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaPosterGrid, MediaRow, usePosterSize } from '@/components/media-cover';
 import { LibrarySearchHeader, useMediaQuery } from '@/components/media-search';
 import { NotesModal } from '@/components/notes-modal';
+import { useSyncRefreshControl } from '@/components/sync-refresh-control';
 import { Screen, ScreenScrollView, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import {
@@ -53,6 +54,7 @@ export default function LibraryScreen() {
   // Reload on every write, even while hidden behind a pushed screen. Focus fires
   // only after the back animation ends, so reloading then shows stale rows first.
   const dataVersion = useDataVersion();
+  const refreshControl = useSyncRefreshControl();
   useEffect(() => {
     let cancelled = false;
 
@@ -218,10 +220,14 @@ export default function LibraryScreen() {
       <LibrarySearchHeader />
       <ScreenScrollView
         keyboardShouldPersistTaps="handled"
+        refreshControl={refreshControl}
         contentContainerStyle={{
           padding: 16,
           gap: 12,
-          ...(items.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null),
+          // Fill the screen even when the list is short, so pull-to-refresh
+          // works from anywhere, not just over the content.
+          flexGrow: 1,
+          ...(items.length === 0 ? { justifyContent: 'center' } : null),
         }}>
       {error ? <Text>{error}</Text> : null}
 

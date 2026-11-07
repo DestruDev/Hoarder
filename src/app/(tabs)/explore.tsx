@@ -5,6 +5,7 @@ import { FlatList, Pressable, SectionList, View } from 'react-native';
 import { useAppSettings } from '@/components/app-settings';
 import { MediaPoster, MediaRow } from '@/components/media-cover';
 import { ExploreSearchHeader, useMediaQuery } from '@/components/media-search';
+import { useSyncRefreshControl } from '@/components/sync-refresh-control';
 import { Screen, Text } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import {
@@ -167,6 +168,7 @@ export default function ExploreScreen() {
   // Library status reloads on every write, even while hidden behind a pushed
   // screen, so it's current before the back animation ends and focus fires.
   const dataVersion = useDataVersion();
+  const refreshControl = useSyncRefreshControl();
   useEffect(() => {
     let cancelled = false;
 
@@ -326,10 +328,11 @@ export default function ExploreScreen() {
           ListFooterComponent={footer}
           stickySectionHeadersEnabled={false}
           keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
           initialNumToRender={8}
           windowSize={7}
           style={{ flex: 1, backgroundColor: colors.background }}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
         />
       ) : (
         <FlatList
@@ -340,10 +343,11 @@ export default function ExploreScreen() {
           ListEmptyComponent={emptyState}
           ListFooterComponent={footer}
           keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
           initialNumToRender={4}
           windowSize={5}
           style={{ flex: 1, backgroundColor: colors.background }}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
         />
       )}
     </Screen>

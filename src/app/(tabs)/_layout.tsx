@@ -2,11 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, Tabs } from 'expo-router';
 import { useState } from 'react';
 
+import { useAuth } from '@/components/auth-provider';
 import { MediaSearchRoot } from '@/components/media-search';
 import { useColors } from '@/components/theme-colors';
+import { syncNow } from '@/lib/sync';
 
 export default function TabLayout() {
   const colors = useColors();
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const [parentTitle, setParentTitle] = useState('Feed');
 
   return (
@@ -14,6 +18,16 @@ export default function TabLayout() {
       <Stack.Screen options={{ title: parentTitle }} />
       <MediaSearchRoot>
         <Tabs
+          // Sync whenever a tab is opened, so edits from other devices show up
+          // without reopening the app. Overlapping requests share one pass, and
+          // screens reload themselves when a sync brings in changes.
+          screenListeners={{
+            focus: () => {
+              if (userId) {
+                void syncNow(userId);
+              }
+            },
+          }}
           screenOptions={{
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,

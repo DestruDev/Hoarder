@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useAuth } from '@/components/auth-provider';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { FollowCounts } from '@/components/social';
+import { useSyncRefreshControl } from '@/components/sync-refresh-control';
 import { ScreenScrollView, Text, TextInput } from '@/components/themed';
 import { useColors } from '@/components/theme-colors';
 import { getProfile, saveProfile, type Profile } from '@/lib/db';
@@ -51,6 +52,15 @@ export default function ProfileScreen() {
     },
     [],
   );
+
+  // Pull to refresh: sync (which reloads the local profile if it changed), then
+  // refetch the server-only parts: handle and follower counts.
+  const refreshSocial = useCallback(async () => {
+    if (userId) {
+      setSocial(await getPublicProfile(userId).catch(() => null));
+    }
+  }, [userId]);
+  const refreshControl = useSyncRefreshControl(refreshSocial);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -135,7 +145,11 @@ export default function ProfileScreen() {
   const saveBackground = saveState === 'saved' ? colors.success : colors.accent;
 
   return (
-    <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScreenScrollView
+      refreshControl={refreshControl}
+      keyboardShouldPersistTaps="handled"
+      // flexGrow fills the screen so pull-to-refresh works from anywhere.
+      contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
         <ProfileAvatar uri={profile.avatarUrl} size={72} />
         <View style={{ flex: 1, gap: 6 }}>
