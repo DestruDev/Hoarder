@@ -16,6 +16,8 @@ const darkColors = {
   searchBarBackground: '#2a2a2a',
   placeholder: '#888888',
   danger: '#ff4d4d',
+  // Confirmation state, e.g. a button that just saved.
+  success: '#2fa84f',
   overlay: 'rgba(0, 0, 0, 0.6)',
   // Badges drawn on top of cover art, so they stay the same in both themes.
   imageBadgeBackground: 'rgba(0, 0, 0, 0.55)',
@@ -36,6 +38,7 @@ const lightColors: ThemeColors = {
   searchBarBackground: '#ececef',
   placeholder: '#8a8a8a',
   danger: '#d92d2d',
+  success: '#23863d',
   overlay: 'rgba(0, 0, 0, 0.4)',
   imageBadgeBackground: 'rgba(0, 0, 0, 0.55)',
   imageBadgeIcon: '#ffffff',

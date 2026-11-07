@@ -1,6 +1,7 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useNavigation } from 'expo-router';
-import { useCallback, useLayoutEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -18,6 +19,7 @@ import {
 import { useSyncVersion } from '@/lib/sync';
 
 const PLACEHOLDER_NAME = 'Username';
+const SAVED_CONFIRMATION_MS = 2000;
 
 const emptyProfile: Profile = {
   name: null,
@@ -38,6 +40,17 @@ export default function ProfileScreen() {
   const [description, setDescription] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -87,6 +100,14 @@ export default function ProfileScreen() {
   );
 
   async function handleSave() {
+    if (saveState === 'saving') {
+      return;
+    }
+
+    if (savedTimer.current) {
+      clearTimeout(savedTimer.current);
+    }
+    setSaveState('saving');
     try {
       const saved = await saveProfile({ name, description, avatarUrl });
       setProfile(saved);
@@ -101,15 +122,20 @@ export default function ProfileScreen() {
         setUsername(claimed);
         setSocial((current) => (current ? { ...current, username: claimed } : current));
       }
+
+      setSaveState('saved');
+      savedTimer.current = setTimeout(() => setSaveState('idle'), SAVED_CONFIRMATION_MS);
     } catch (saveError: unknown) {
+      setSaveState('idle');
       setError(saveError instanceof Error ? saveError.message : 'Failed to save profile');
     }
   }
 
+  const saveLabel = saveState === 'saved' ? 'Saved' : 'Save profile';
+  const saveBackground = saveState === 'saved' ? colors.success : colors.accent;
+
   return (
     <ScreenScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      {error ? <Text>{error}</Text> : null}
-
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
         <ProfileAvatar uri={profile.avatarUrl} size={72} />
         <View style={{ flex: 1, gap: 6 }}>
@@ -156,9 +182,35 @@ export default function ProfileScreen() {
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <Pressable onPress={handleSave}>
-          <Text>Save profile</Text>
+        <Pressable
+          onPress={handleSave}
+          disabled={saveState === 'saving'}
+          accessibilityRole="button"
+          accessibilityLabel={saveLabel}
+          accessibilityState={{ busy: saveState === 'saving' }}
+          style={{
+            height: 44,
+            marginTop: 4,
+            borderRadius: 10,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            backgroundColor: saveBackground,
+            opacity: saveState === 'saving' ? 0.7 : 1,
+          }}>
+          {saveState === 'saving' ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <>
+              {saveState === 'saved' ? (
+                <Ionicons name="checkmark" size={20} color={colors.onAccent} />
+              ) : null}
+              <Text style={{ color: colors.onAccent, fontWeight: '600' }}>{saveLabel}</Text>
+            </>
+          )}
         </Pressable>
+        {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       </View>
     </ScreenScrollView>
   );
